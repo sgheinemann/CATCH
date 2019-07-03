@@ -1,2 +1,2 @@
 # CATCH
-CATCH tool
+CATCH
