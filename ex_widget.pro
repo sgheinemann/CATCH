@@ -51,6 +51,7 @@ pro ex_widget, ev
   lbc=widget_button(data_field,value='LBC off', uval='lbc',/NO_release, xoffset=10, yoffset=230,xsize=100,ysize=25,tooltip='Turn Limb Brightening Correction on/off')
   endelse
   
+  
   label_reso = WIDGET_LABEL(data_field, XSIZE=70, VALUE='Resolution', yoffset=235, xoffset=130, /align_left)
   cbox_reso=widget_combobox(data_field,value=['4096x4096','2048x2048','1024x1024','512x512','256x256'], uval='cbox_reso', xsize= 100, yoffset=230, xoffset=200,ysize=25)  
   case paths.res_euv of
@@ -95,40 +96,53 @@ pro ex_widget, ev
     labelYSize =  labelGeometry.ysize
     results = Widget_Base(interm_res, /FRAME, YOFFSET=labelYSize/2, YPAD=10, XPAD=10,ysize=128,xsize=428)
     label = Widget_Label(interm_res, value='Coronal Hole Properties', XOFFSET=10)
+    
+
+    shift=3 
+      
+    if paths.uncert eq 'on' then labeltext='Mean' else labeltext='Value'
+    vlabel_mean = WIDGET_LABEL(results, XSIZE=110, VALUE=labeltext, xoffset=170, yoffset=shift-1,/align_center)
+    label_uncert = WIDGET_LABEL(results, XSIZE=110, VALUE='Uncertainty', xoffset=310, yoffset=shift-1,/ALIGN_LEFT)
+    
+    
+    category_factor_b= Widget_Base(results, /FRAME, YOFFSET=40+shift, Xoffset=380, ysize=40,xsize=40)
+    traffic_lights = widget_draw(category_factor_b, uvalue='traffic_lights', xsize=40, ysize=20, xoffset=0, yoffset=20, RENDERER=1)
+    vlabel_category = WIDGET_LABEL(category_factor_b, XSIZE=40, VALUE=' ', xoffset=0, yoffset=1, /ALIGN_CENTER )
+
+    
+    label_area = WIDGET_LABEL(results, XSIZE=170, VALUE=   'Area [10^10 km^2]         :', xoffset=10, yoffset=15+shift,/ALIGN_LEFT)
+    label_medint = WIDGET_LABEL(results, XSIZE=170, VALUE= 'Median Intensity [DN]     :', xoffset=10, yoffset=30+shift,/ALIGN_LEFT)
+    label_meanint = WIDGET_LABEL(results, XSIZE=170, VALUE='Mean Intensity [DN]       :', xoffset=10, yoffset=45+shift,/ALIGN_LEFT)
+    label_lng = WIDGET_LABEL(results, XSIZE=170, VALUE=    'CoM Longitude [Deg]       :', xoffset=10, yoffset=60+shift,/ALIGN_LEFT)
+    label_lat = WIDGET_LABEL(results, XSIZE=170, VALUE=    'CoM Latitude [Deg]        :', xoffset=10, yoffset=75+shift,/ALIGN_LEFT)
+    label_lngex = WIDGET_LABEL(results, XSIZE=170, VALUE=  'Longitudinal Extent [Deg] :', xoffset=10, yoffset=90+shift,/ALIGN_LEFT)
+    label_latex = WIDGET_LABEL(results, XSIZE=170, VALUE=  'Latitudinal Extent [Deg]  :', xoffset=10, yoffset=105+shift,/ALIGN_LEFT)
   
-    label_area = WIDGET_LABEL(results, XSIZE=170, VALUE=   'Area [10^10 km^2]         :', xoffset=10, yoffset=15,/ALIGN_LEFT)
-    label_medint = WIDGET_LABEL(results, XSIZE=170, VALUE= 'Median Intensity [DN]     :', xoffset=10, yoffset=30,/ALIGN_LEFT)
-    label_meanint = WIDGET_LABEL(results, XSIZE=170, VALUE='Mean Intensity [DN]       :', xoffset=10, yoffset=45,/ALIGN_LEFT)
-    label_lng = WIDGET_LABEL(results, XSIZE=170, VALUE=    'CoM Longitude [Deg]       :', xoffset=10, yoffset=60,/ALIGN_LEFT)
-    label_lat = WIDGET_LABEL(results, XSIZE=170, VALUE=    'CoM Latitude [Deg]        :', xoffset=10, yoffset=75,/ALIGN_LEFT)
-    label_lngex = WIDGET_LABEL(results, XSIZE=170, VALUE=  'Longitudinal Extent [Deg] :', xoffset=10, yoffset=90,/ALIGN_LEFT)
-    label_latex = WIDGET_LABEL(results, XSIZE=170, VALUE=  'Latitudinal Extent [Deg]  :', xoffset=10, yoffset=105,/ALIGN_LEFT)
-  
-    vlabel_area = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=15)
-    vlabel_medint = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=30)
-    vlabel_meanint = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=45)
-    vlabel_lng = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=60)
-    vlabel_lat = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=75)
-    vlabel_exlng = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=90)
-    vlabel_exlat = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=105)
+    vlabel_area = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=15+shift)
+    vlabel_medint = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=30+shift)
+    vlabel_meanint = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=45+shift)
+    vlabel_lng = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=60+shift)
+    vlabel_lat = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=75+shift)
+    vlabel_exlng = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=90+shift)
+    vlabel_exlat = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=170, yoffset=105+shift)
+
     
-    vlabel_area_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=15)
-    vlabel_medint_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=30)
-    vlabel_meanint_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=45)
-    vlabel_lng_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=60)
-    vlabel_lat_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=75)
-    vlabel_exlng_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=90)
-    vlabel_exlat_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=105)
+    vlabel_area_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=15+shift)
+    vlabel_medint_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=30+shift)
+    vlabel_meanint_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=45+shift)
+    vlabel_lng_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=60+shift)
+    vlabel_lat_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=75+shift)
+    vlabel_exlng_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=90+shift)
+    vlabel_exlat_pm = WIDGET_LABEL(results, XSIZE=20, VALUE=string(177b), xoffset=280, yoffset=105+shift)
     
-    vlabel_area_err = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=290, yoffset=15)
-    vlabel_medint_err = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=290, yoffset=30)
-    vlabel_meanint_err = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=290, yoffset=45)
-    vlabel_lng_err = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=290, yoffset=60)
-    vlabel_lat_err = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=290, yoffset=75)
-    vlabel_exlng_err = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=290, yoffset=90)
-    vlabel_exlat_err = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=290, yoffset=105)
+    vlabel_area_err = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=310, yoffset=15+shift,/ALIGN_LEFT)
+    vlabel_medint_err = WIDGET_LABEL(results, XSIZE=60, VALUE=' ', xoffset=310, yoffset=30+shift,/ALIGN_LEFT)
+    vlabel_meanint_err = WIDGET_LABEL(results, XSIZE=60, VALUE=' ', xoffset=310, yoffset=45+shift,/ALIGN_LEFT)
+    vlabel_lng_err = WIDGET_LABEL(results, XSIZE=60, VALUE=' ', xoffset=310, yoffset=60+shift,/ALIGN_LEFT)
+    vlabel_lat_err = WIDGET_LABEL(results, XSIZE=60, VALUE=' ', xoffset=310, yoffset=75+shift,/ALIGN_LEFT)
+    vlabel_exlng_err = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=310, yoffset=90+shift,/ALIGN_LEFT)
+    vlabel_exlat_err = WIDGET_LABEL(results, XSIZE=110, VALUE=' ', xoffset=310, yoffset=105+shift,/ALIGN_LEFT)
     
-    traffic_lights = widget_draw(results, uvalue='traffic_lights', xsize=16, ysize=16, xoffset=400, yoffset=16, RENDERER=1)
     
     label1 = WIDGET_LABEL(extr, XSIZE=262, VALUE='X position:', xoffset=980-522, yoffset=522+10)
     label2 = WIDGET_LABEL(extr, XSIZE=262, VALUE='Y position:', xoffset=980-522, yoffset=522+25)
@@ -156,22 +170,22 @@ pro ex_widget, ev
     WSET, logoID_traffic_lights
     
     graycol=194
-    lights=make_array(3,16,16) & lights[0,*,*]=graycol & lights[1,*,*]=graycol & lights[2,*,*]=graycol
+    lights=make_array(3,40,20) & lights[0,*,*]=graycol & lights[1,*,*]=graycol & lights[2,*,*]=graycol
     tvimage, lights
     
     WIDGET_CONTROL, draww, GET_VALUE=drawID
     WIDGET_CONTROL, draw_hist, GET_VALUE=draw_histID
   
-    logo_draw_catch = widget_draw(extr, uvalue='logo_catch', xsize=230, ysize=98, yoffset=542, xoffset=740)
+    logo_draw_catch = widget_draw(extr, uvalue='logo_catch', xsize=230, ysize=75, yoffset=542+11, xoffset=740)
 
     undefine, plot_scl
     
     WIDGET_CONTROL, logo_draw_catch, GET_VALUE=logoID_catch
     WSET, logoID_catch
 
-    logo_path=dir+'catch_logo.jpg'
+    logo_path=dir+'catch.jpg'
     read_jpeg,logo_path, logo
-    logo=congrid(logo,3,230*2,98*2,/center)
+    logo=congrid(logo,3,230*8,75*8,/center)
     tvimage, logo
     widget_control, logo_draw_catch, sensitive=0
    
@@ -184,7 +198,7 @@ pro ex_widget, ev
          ex_main:ex_main,lbc:lbc,cbox_reso:cbox_reso, files_list:files_list,drawID:drawID, draw_histID:draw_histID, ld_path:ld_path_text,thick_text:long(0),$
          sv_path:sv_path_text, opt_main:long(0),dmin_text:long(0), grid_text:long(0),dmax_text:long(0), apply_opt:long(0),abort_opt:long(0), popt:popt,$
          draw_main:long(0), apply_draw:long(0), abort_draw:long(0), draw_big:long(0), draw_radius:long(0), popt_draw:long(0), new_draw:long(0), draw_morph:long(0),$
-         draw_morph_activ:long(0), draw_erase:long(0),draw_bigID:long(0) }
+         draw_morph_activ:long(0), draw_erase:long(0),draw_bigID:long(0),vlabel_category:vlabel_category , vlabel_mean:vlabel_mean}
         
        
   xmanager, 'ex',ex_main,  /no_block
@@ -219,11 +233,116 @@ PRO ex_event, ev                                          ; event handler
       
       ch_prop=make_array(7,11); binmaps1-5, average, stddev;area, meanint, medianint, com_lng, com_lat, com_xc, com_yc, lng_min, lng_max, lat_min, lat_max
 
+
+    if paths.uncert eq 'off' then begin
+      widget_control, /hourglass
+      i=0
+      roi=region_grow(bmaps[i].data, seed_dex, /all_neighbors, threshold=[0.5,1.5])
+        chmap=bmaps[i]
+        chmap.data[*]=0  &  chmap.data[roi]=1
+        chmaps=replicate(chmap,5)
+        helpmap=chmap   &  helpmap.data[where(chmap.data eq 0,/null)]=!values.f_nan  
+      curve_corr, helpmap, corr_map,coreg=coreg,area=area
       
+      if map_identifyer eq 'SOHO' then begin & mc_obs='SOHO' & endif else begin
+        if map_identifyer eq 'SDO'  then begin & mc_obs='SDO' & endif else begin
+          if strmatch(workmap.id,'*STEREO_A*', /fold_case) eq 1 then mc_obs='STEREO_A'
+          if strmatch(workmap.id,'*STEREO_B*', /fold_case) eq 1 then mc_obs='STEREO_B'
+        endelse
+      endelse
+
+      calc_masscenter, corr_map, xy_center,coord=coord, coreg = coreg, observer=mc_obs
+
+      ch_prop[i,0]=area
+      ch_prop[i,1]=median(workmap.data[where(chmap.data eq 1,/null)])
+      meanint_mom=(moment(workmap.data[where(chmap.data eq 1,/null)],/nan,maxmoment=2))
+      ch_prop[i,2]=meanint_mom[0]
+      ch_prop[i,3]=xy_center[1] &  ch_prop[i,4]=xy_center[0]
+      ch_prop[i,5]=coord[0] & ch_prop[i,6]=coord[1]
+
+      mcrpix1=comp_fits_crpix(chmap.xc,chmap.dx,n_elements(chmap.data[*,0]),0.)
+      mcrpix2=comp_fits_crpix(chmap.yc,chmap.dy,n_elements(chmap.data[0,*]),0.)
+      mapdate=anytim(chmaps[i].time,/ccsds)
+
+      ind = ARRAY_INDICES(chmap.data, where(chmap.data eq 1,/null))
+      ind_coord = [ ( ind[0,*] - (mcrpix1)) * chmap.dx , (ind[1,*] - (mcrpix2 )) * chmap.dy ]
+      if map_identifyer eq 'SOHO' then begin & ang=pb0r(workmap.time, /soho, l0=l0,/arcsec) & endif else begin
+        if map_identifyer eq 'SDO'  then begin & ang=pb0r(workmap.time, /earth, l0=l0,/arcsec) & endif else begin
+          if strmatch(workmap.id,'*STEREO_A*', /fold_case) eq 1 then ang=pb0r(workmap.time, /sta, l0=l0,/arcsec)
+          if strmatch(workmap.id,'*STEREO_B*', /fold_case) eq 1 then ang=pb0r(workmap.time, /stb, l0=l0,/arcsec)
+        endelse
+      endelse
+
+      p=ang[0] & b0=ang[1] & r=ang[2]
+      lonlat_coord = arcmin2hel(ind_coord[0,*]/60, ind_coord[1,*]/60, date=mapdate, b0=b0,l0=l0,rsun=r,p=p)
+
+      minmax_lng_px=minmax(lonlat_coord[1,*],/nan)
+      minmax_lat_px=minmax(lonlat_coord[0,*],/nan)
+
+      ch_prop[i,7]=minmax_lng_px[0] &    ch_prop[i,8]=minmax_lng_px[1]
+      ch_prop[i,9]=minmax_lat_px[0] &    ch_prop[i,10]=minmax_lat_px[1]
+
+
+      for j=0, 10 do begin & ch_prop[5,j]=ch_prop[0,j] & ch_prop[6,j]=!values.f_nan & endfor
+      for j=0, 10 do begin & for k=1, 4 do ch_prop[k,j]=ch_prop[0,j] & endfor
+      
+      WSET, ids.drawID
+
+      pmap=themap
+      case map_identifyer of
+        'SOHO': eit_colors, 195,/silent
+        'STEREO': SECCHI_COLORS, 'EUVI', 195, /LOAD
+        'SDO': aia_lct, wave='193', /load
+      endcase
+
+
+      ixixdate=anytim(themap.time,/ccsds)
+
+      plot_map, pmap, xrange=[-1100,1100],yrange=[-1100,1100],dmin=plot_scl[0],dmax=plot_scl[1],/log, title=strmid(ixixdate,0,16),window=!D.Window,  xstyle=5, ystyle=5, position=[0,0,1,1], grid_spacing=plot_scl[3];, g_color=255
+      plot_map, chmap, /over, /cont, color=cgcolor('red'),c_thick=plot_scl[2], c_linestyle=0
+      plots,ch_prop[0,5],ch_prop[0,6], psym=7, color=cgcolor('gold'), symsize=1.5, thick=2.5
+
+      xyouts, -1070,-1070,strmid(ixixdate,0,16), color=cgcolor('white'), charsize=1.5, charthick=1.5
+      dcord=!D & xcord=!X & ycord=!Y
+
+      if ch_prop[5,7] lt -80 then begin & ch_prop[5,7]=!values.f_nan  & ch_prop[6,7]=!values.f_nan & endif
+      if ch_prop[5,8] gt 80 then begin & ch_prop[5,8]=!values.f_nan  & ch_prop[6,8]=!values.f_nan & endif
+      if ch_prop[5,9] lt -80 then begin & ch_prop[5,9]=!values.f_nan  & ch_prop[6,9]=!values.f_nan & endif
+      if ch_prop[5,10] gt 80 then begin & ch_prop[5,10]=!values.f_nan  & ch_prop[6,10]=!values.f_nan  & endif
+
+      WIDGET_CONTROL, ids.vlabel_area, SET_VALUE=strtrim(STRING(ch_prop[5,0]/1e10, format='(F15.3)'),2)
+      WIDGET_CONTROL, ids.vlabel_medint, SET_VALUE=strtrim(STRING(ch_prop[5,1], format='(F15.3)'),2)
+      WIDGET_CONTROL, ids.vlabel_meanint, SET_VALUE=strtrim(STRING(ch_prop[5,2], format='(F15.3)'),2)
+      WIDGET_CONTROL, ids.vlabel_lng, SET_VALUE=strtrim(STRING(ch_prop[5,3], format='(F15.3)'),2)
+      WIDGET_CONTROL, ids.vlabel_lat, SET_VALUE=strtrim(STRING(ch_prop[5,4], format='(F15.3)'),2)
+      WIDGET_CONTROL, ids.vlabel_exlng, SET_VALUE=strtrim(STRING(ch_prop[5,7], format='(F15.2)'),2)+' | '+strtrim(STRING(ch_prop[5,8], format='(F15.2)'),2)
+      WIDGET_CONTROL, ids.vlabel_exlat, SET_VALUE=strtrim(STRING(ch_prop[5,9], format='(F15.2)'),2)+' | '+strtrim(STRING(ch_prop[5,10], format='(F15.2)'),2)
+
+      area_ratio=!values.f_nan;999;100.*ch_prop[6,0]/ch_prop[5.0]
+      WIDGET_CONTROL, ids.vlabel_area_err, SET_VALUE=strtrim(STRING(ch_prop[6,0]/1e10, format='(F15.3)'),2)+' | '+strtrim(STRING(area_ratio, format='(F15.1)'),2)+'%'
+      WIDGET_CONTROL, ids.vlabel_medint_err, SET_VALUE=strtrim(STRING(ch_prop[6,1], format='(F15.3)'),2)
+      WIDGET_CONTROL, ids.vlabel_meanint_err, SET_VALUE=strtrim(STRING(ch_prop[6,2], format='(F15.3)'),2)
+      WIDGET_CONTROL, ids.vlabel_lng_err, SET_VALUE=strtrim(STRING(ch_prop[6,3], format='(F15.3)'),2)
+      WIDGET_CONTROL, ids.vlabel_lat_err, SET_VALUE=strtrim(STRING(ch_prop[6,4], format='(F15.3)'),2)
+      WIDGET_CONTROL, ids.vlabel_exlng_err, SET_VALUE=strtrim(STRING(ch_prop[6,7], format='(F15.2)'),2)+' | '+strtrim(STRING(ch_prop[6,8], format='(F15.2)'),2)
+      WIDGET_CONTROL, ids.vlabel_exlat_err, SET_VALUE=strtrim(STRING(ch_prop[6,9], format='(F15.2)'),2)+' | '+strtrim(STRING(ch_prop[6,10], format='(F15.2)'),2)
+
+      cf=!values.f_nan
+      WIDGET_CONTROL, ids.vlabel_category, SET_VALUE=strtrim(STRING(cf, format='(F15.1)'),2)
+      
+      WSET, ids.logoID_traffic_lights
+      graycol=194
+      lights=make_array(3,40,20) & lights[0,*,*]=graycol & lights[1,*,*]=graycol & lights[2,*,*]=graycol
+      tvimage, lights
+
+      extracted=0
+      boundary_exists=1
+      widget_control, ids.save,sensitive=1
+    endif else begin
       for i=0, 4 do begin
         roi=region_grow(bmaps[i].data, seed_dex, /all_neighbors, threshold=[0.5,1.5])
         chmaps[i].data[*]=0  &  chmaps[i].data[roi]=1
-        helpmap=chmaps[i]    &  helpmap.data[where(chmaps[i].data eq 0)]=!values.f_nan  
+        helpmap=chmaps[i]    &  helpmap.data[where(chmaps[i].data eq 0,/null)]=!values.f_nan  
       curve_corr, helpmap, corr_map,coreg=coreg,area=area
       
       if map_identifyer eq 'SOHO' then begin & mc_obs='SOHO' & endif else begin
@@ -236,8 +355,8 @@ PRO ex_event, ev                                          ; event handler
       calc_masscenter, corr_map, xy_center,coord=coord, coreg = coreg, observer=mc_obs
       
       ch_prop[i,0]=area
-      ch_prop[i,1]=median(workmap.data[where(chmaps[i].data eq 1)])
-      meanint_mom=(moment(workmap.data[where(chmaps[i].data eq 1)],/nan,maxmoment=2))
+      ch_prop[i,1]=median(workmap.data[where(chmaps[i].data eq 1,/null)])
+      meanint_mom=(moment(workmap.data[where(chmaps[i].data eq 1,/null)],/nan,maxmoment=2))
       ch_prop[i,2]=meanint_mom[0]
       ch_prop[i,3]=xy_center[1] &  ch_prop[i,4]=xy_center[0]
       ch_prop[i,5]=coord[0] & ch_prop[i,6]=coord[1]
@@ -246,7 +365,7 @@ PRO ex_event, ev                                          ; event handler
       mcrpix2=comp_fits_crpix(chmaps[i].yc,chmaps[i].dy,n_elements(chmaps[i].data[0,*]),0.)
       mapdate=anytim(chmaps[i].time,/ccsds)
 
-      ind = ARRAY_INDICES(chmaps[i].data, where(chmaps[i].data eq 1))
+      ind = ARRAY_INDICES(chmaps[i].data, where(chmaps[i].data eq 1,/null))
       ind_coord = [ ( ind[0,*] - (mcrpix1)) * chmaps[i].dx , (ind[1,*] - (mcrpix2 )) * chmaps[i].dy ]
       if map_identifyer eq 'SOHO' then begin & ang=pb0r(workmap.time, /soho, l0=l0,/arcsec) & endif else begin
       if map_identifyer eq 'SDO'  then begin & ang=pb0r(workmap.time, /earth, l0=l0,/arcsec) & endif else begin
@@ -269,7 +388,8 @@ PRO ex_event, ev                                          ; event handler
        help_var=moment(ch_prop[0:4,i],/nan, maxmoment=2)
        ch_prop[5,i]=help_var[0] & ch_prop[6,i]=max(sqrt((ch_prop[0:4,i]-ch_prop[5,i])^2))
        endfor
-   
+       
+       
        WSET, ids.drawID
 
        pmap=themap
@@ -282,9 +402,11 @@ PRO ex_event, ev                                          ; event handler
              
        ixixdate=anytim(themap.time,/ccsds)
        
-       plot_map, pmap, xrange=[-1100,1100],yrange=[-1100,1100],dmin=plot_scl[0],dmax=plot_scl[1],/log, title=strmid(ixixdate,0,16),window=!D.Window,  xstyle=5, ystyle=5, position=[0,0,1,1], grid_spacing=plot_scl[3];, g_color=255 
-       plot_map, chmaps[0], /over, /cont, color=cgcolor('blue'),c_thick=plot_scl[2], c_linestyle=0
-       plot_map, chmaps[4], /over, /cont, color=cgcolor('blue'),c_thick=plot_scl[2], c_linestyle=0
+       plot_map, pmap, xrange=[-1100,1100],yrange=[-1100,1100],dmin=plot_scl[0],dmax=plot_scl[1],/log, title=strmid(ixixdate,0,16),window=!D.Window,  xstyle=5, ystyle=5, position=[0,0,1,1], grid_spacing=plot_scl[3];, g_color=255       
+       
+       emap=chmaps[4] & emap.data[where(chmaps[0].data eq 1,/null)]=0
+       plot_map, emap, /over, /cont, color=cgcolor('blue'),/overlay, contour=1,/cell_fill,levels=[1]
+       
        plot_map, chmaps[2], /over, /cont, color=cgcolor('red'),c_thick=plot_scl[2], c_linestyle=0
        plots,ch_prop[2,5],ch_prop[2,6], psym=7, color=cgcolor('gold'), symsize=1.5, thick=2.5
        
@@ -313,10 +435,17 @@ PRO ex_event, ev                                          ; event handler
       WIDGET_CONTROL, ids.vlabel_exlng_err, SET_VALUE=strtrim(STRING(ch_prop[6,7], format='(F15.2)'),2)+' | '+strtrim(STRING(ch_prop[6,8], format='(F15.2)'),2)
       WIDGET_CONTROL, ids.vlabel_exlat_err, SET_VALUE=strtrim(STRING(ch_prop[6,9], format='(F15.2)'),2)+' | '+strtrim(STRING(ch_prop[6,10], format='(F15.2)'),2)
       
-      if area_ratio lt 5 then begin
+      
+      A=[15.82  ,   0.10  ,  -6.02]
+      category_factor=(ch_prop[6,0]/ch_prop[5.0])*100/(A[0]*(ch_prop[5,0]/1e10)^(-1*A[1])+A[2])
+       
+      WIDGET_CONTROL, ids.vlabel_category, SET_VALUE=strtrim(STRING(category_factor, format='(F15.2)'),2)     
+
+      
+      if category_factor lt 1. then begin
         trcol=[0, 127, 0]
       endif else begin
-        if area_ratio gt 10 then begin
+        if category_factor gt 2. then begin
           trcol=[255,0,0]
         endif else begin
           trcol=[255, 165, 0]
@@ -325,19 +454,14 @@ PRO ex_event, ev                                          ; event handler
       graycol=194
       
       WSET, ids.logoID_traffic_lights
-      lights=make_array(3,16,16) 
-      dist_circle, circ_struct, 16
-      ;circ_struct=round(circ_struct) & 
-      c_struct1=circ_struct &  c_struct1[*]=trcol[0] & c_struct1[where(circ_struct gt 8)]=graycol
-      c_struct2=circ_struct &  c_struct2[*]=trcol[1] & c_struct2[where(circ_struct gt 8)]=graycol
-      c_struct3=circ_struct &  c_struct3[*]=trcol[2] & c_struct3[where(circ_struct gt 8)]=graycol
-      lights[0,*,*]=c_struct1 & lights[1,*,*]=c_struct2 & lights[2,*,*]=c_struct3
+      lights=make_array(3,40,20)
+      lights[0,*,*]=trcol[0] & lights[1,*,*]=trcol[1] & lights[2,*,*]=trcol[2]
       tvimage, lights
       
       extracted=0
       boundary_exists=1
       widget_control, ids.save,sensitive=1
-      
+      endelse
       endif else begin
            res=dialog_message('No Coronal Hole selected! Please reselect!', dialog_parent=ids.ex_main)
            return
@@ -368,7 +492,7 @@ PRO ex_event, ev                                          ; event handler
     'lbc':begin &  widget_control, ev.id, get_value=value   & if value eq 'LBC off' then widget_control, ev.id, set_value='LBC on' else widget_control, ev.id, set_value='LBC off' &  end
     'refresh': begin
       widget_control,/hourglass
-      widget_control, ids.sv_path, get_value=temp_path
+      widget_control, ids.ld_path, get_value=temp_path
       lfiles=file_search([temp_path+'*.fits',temp_path+'*.fts',temp_path+'*.sav',temp_path+'efz*'])
       lfiles=file_basename(lfiles)
       widget_control, ids.files_list, set_value=lfiles
@@ -524,7 +648,7 @@ PRO ex_event, ev                                          ; event handler
       WSET, ids.draw_histID
         sd_ind=median(workmap.data)
         h=histogram(workmap.data, locations=bin, binsize=5)
-        if min(h[where(bin lt 250)],/nan)*0.8 gt 1 then ymin=min(h[where(bin lt 250)],/nan)*0.8 else ymin=1
+        if min(h[where(bin lt 250,/null)],/nan)*0.8 gt 1 then ymin=min(h[where(bin lt 250,/null)],/nan)*0.8 else ymin=1
       plot, bin, h, xtit='Intensity', /ylog, title=' ', position=[0.01,0.16,0.87,0.95],  Color=cgColor('black'), Background=cgColor('white'), $;psym=10,
         xstyle=9, ystyle=9,charsize=0.9, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, xrange=[0,250], yrange=[ymin,max(h,/nan)*1.2],$
         YTICKFORMAT="(A1)", ytit=' '
@@ -537,9 +661,9 @@ PRO ex_event, ev                                          ; event handler
 
 
        WSET, ids.logoID_traffic_lights
-       graycol=194
-       lights=make_array(3,16,16) & lights[0,*,*]=graycol & lights[1,*,*]=graycol & lights[2,*,*]=graycol
-       tvimage, lights
+      graycol=194
+      lights=make_array(3,40,20) & lights[0,*,*]=graycol & lights[1,*,*]=graycol & lights[2,*,*]=graycol
+      tvimage, lights
        
        WIDGET_CONTROL, ids.vlabel_area, SET_VALUE= ' '
        WIDGET_CONTROL, ids.vlabel_medint, SET_VALUE=' '
@@ -557,6 +681,8 @@ PRO ex_event, ev                                          ; event handler
        WIDGET_CONTROL, ids.vlabel_exlng_err, SET_VALUE=' '
        WIDGET_CONTROL, ids.vlabel_exlat_err, SET_VALUE=' '
        
+      WIDGET_CONTROL, ids.vlabel_category, SET_VALUE=' '
+       
       widget_control, ids.popt, sensitive=1
       widget_control, ids.draww,sensitive=1
       widget_control, ids.draw_tool, sensitive=1
@@ -571,7 +697,10 @@ PRO ex_event, ev                                          ; event handler
         widget_control,/hourglass
         widget_control, ids.thresh, get_value=thr_value
         widget_control, ids.morph, get_value=morph_value
-      
+        
+        if paths.uncert eq 'on' then labeltext='Mean' else labeltext='Value'
+        WIDGET_CONTROL, ids.vlabel_mean, SET_VALUE=labeltext
+        
       sd_ind=median(workmap.data)
       bmap=workmap & bmap.data[*]=0 & bmaps=replicate(bmap, 5) ;& bmap2=workmap & bmap2.data[*]=0 & bmap3=workmap & bmap3.data[*]=0
       bmaps[0].data[where(workmap.data lt ((thr_value-2)/1e2*sd_ind))]=1
@@ -583,7 +712,7 @@ PRO ex_event, ev                                          ; event handler
       if morph_value ne 0 then  begin
       dist_circle, circ_struct, 30
       c_struct=circ_struct &  c_struct[*]=1
-      c_struct[where(circ_struct gt morph_value)]=0
+      c_struct[where(circ_struct gt morph_value,/null)]=0
       
         for i=0, 4 do begin  
           bmaps[i].data=morph_open(bmaps[i].data,c_struct)
@@ -623,10 +752,12 @@ PRO ex_event, ev                                          ; event handler
       WIDGET_CONTROL, ids.vlabel_exlng_err, SET_VALUE=' '
       WIDGET_CONTROL, ids.vlabel_exlat_err, SET_VALUE=' '
       
+      WIDGET_CONTROL, ids.vlabel_category, SET_VALUE=' '
+      
       WSET, ids.logoID_traffic_lights
 
       graycol=194
-      lights=make_array(3,16,16) & lights[0,*,*]=graycol & lights[1,*,*]=graycol & lights[2,*,*]=graycol
+      lights=make_array(3,40,20) & lights[0,*,*]=graycol & lights[1,*,*]=graycol & lights[2,*,*]=graycol
       tvimage, lights
       
       widget_control, ids.save,sensitive=0
@@ -637,7 +768,7 @@ PRO ex_event, ev                                          ; event handler
       WSET, ids.draw_histID
       sd_ind=median(workmap.data)
       h=histogram(workmap.data, locations=bin, binsize=5)
-      if min(h[where(bin lt 250)],/nan)*0.8 gt 1 then ymin=min(h[where(bin lt 250)],/nan)*0.8 else ymin=1
+      if min(h[where(bin lt 250,/null)],/nan)*0.8 gt 1 then ymin=min(h[where(bin lt 250,/null)],/nan)*0.8 else ymin=1
       plot, bin, h, xtit='Intensity', /ylog, title=' ', position=[0.01,0.16,0.87,0.95],  Color=cgColor('black'), Background=cgColor('white'), $;psym=10,
         xstyle=9, ystyle=9,charsize=0.9, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, xrange=[0,250], yrange=[ymin,max(h,/nan)*1.2],$
         YTICKFORMAT="(A1)", ytit=' '
@@ -685,7 +816,7 @@ PRO ex_event, ev                                          ; event handler
         match1=strmatch(flist,'*'+sat+'*PLASTIC*'+yr+'*', /fold_case)
         match2=strmatch(flist,'*'+sat+'*MAG*'+yr+'*', /fold_case)
         
-        l_index1=where(match1 eq 1) 
+        l_index1=where(match1 eq 1,/null) 
         if l_index1 ge 0 then begin
         plasma_file=flist[l_index1]
         endif else begin
@@ -693,7 +824,7 @@ PRO ex_event, ev                                          ; event handler
             return
           endelse
           
-        l_index2=where(match2 eq 1) & mag_file=flist[l_index2]
+        l_index2=where(match2 eq 1,/null) & mag_file=flist[l_index2]
         if l_index2 ge 0 then begin
           mag_file=flist[l_index2]
            endif else begin
@@ -1125,12 +1256,12 @@ WSET, insi_ids.draw_insitu1ID
       endif
       map2index, workmap, index
       map2index, chmaps[4], chdex
-      ind=array_indices(chmaps[4].data, where(chmaps[4].data eq 1))
+      ind=array_indices(chmaps[4].data, where(chmaps[4].data eq 1,/null))
       sub_map,  chmaps,binmap, xrange=[(min(ind[0,*])-chdex.crpix1)*chdex.cdelt1-50,(max(ind[0,*])-chdex.crpix1)*chdex.cdelt1+50], $
         yrange=[(min(ind[1,*])-chdex.crpix2)*chdex.cdelt2-50,(max(ind[1,*])-chdex.crpix2)*chdex.cdelt2+50]
         
       final_binmap=binmap[0]  
-      for ji=1, 4 do final_binmap.data[where(binmap[ji].data ne binmap[(ji-1)].data)]=1+ji
+      for ji=1, 4 do final_binmap.data[where(binmap[ji].data ne binmap[(ji-1)].data,/null)]=1+ji
     
       
       if map_identifyer eq 'SOHO' or map_identifyer eq 'SDO' then begin & obs= map_identifyer & endif else begin
@@ -1151,6 +1282,7 @@ WSET, insi_ids.draw_insitu1ID
       bindex=ADD_TAG(bindex,thr_value,'thresh')
       bindex=ADD_TAG(bindex,thr_value*sd_ind/100.,'threshdn')
       bindex=ADD_TAG(bindex,version,'v_CATCH')
+      
       
       helpdate=anytim(index.date_obs,/ex)
       yyyy=strtrim(string(helpdate[6]),2)
@@ -1195,6 +1327,7 @@ WSET, insi_ids.draw_insitu1ID
       endif 
    
       mwritefits, bindex, bdata, outfile = outname
+      
       chproperties2txt, ch_prop,[thr_value,thr_value*sd_ind/100.], outname_prop, obs, strmid(index.date_obs,0,19)
       
       if paths.smaps_euv eq 'y' then save, filename=outname_save, description='CATCH:EUV', themap, workmap, binmap, map_identifyer
@@ -1219,13 +1352,25 @@ WSET, insi_ids.draw_insitu1ID
       device, filename=outname_fd,xsize = x_size, ysize = y_size, xoffset = x_offset, yoffset = y_offset, encaps = 1,color=1,decomposed=1, landscape=0,BITS_PER_PIXEL=24
       pmap=themap
       plot_map, pmap, xrange=[-1100,1100],yrange=[-1100,1100],dmin=plot_scl[0],dmax=plot_scl[1], title=strmid(index.date_obs,0,16),$
-        position=[0.2,0.2,0.9,0.9],grid_spacing=plot_scl[2],charthick=2,charsize=1,/log 
+        position=[0.2,0.2,0.9,0.9],grid_spacing=plot_scl[3],charthick=2,charsize=1,/log 
       plot_map, chmaps[2], /over,/cont, color=cgcolor('red'),c_thick=plot_scl[2]
       plots,ch_prop[2,5],ch_prop[2,6], psym=7, color=cgcolor('gold'), symsize=0.5, thick=2
 
+      logo_path=dir+'catch.jpg'
+      read_jpeg,logo_path, logo
+      ;logo=congrid(logo,3,230*8,75*8,/center)
+      tvimage, logo, position=[0.746,0.2,0.9,0.25]
+
+
       DEVICE, /CLOSE_FILE
       SET_PLOT, 'X'
-      
+
+      case map_identifyer of
+        'SOHO': eit_colors, 195,/silent
+        'STEREO': SECCHI_COLORS, 'EUVI', 195, /LOAD
+        'SDO': aia_lct, wave='193', /load
+      endcase
+            
       SET_PLOT, 'PS'
       device, filename=outname_euv,xsize = x_size, ysize = y_size, xoffset = x_offset, yoffset = y_offset, encaps = 1,color=1,decomposed=1, landscape=0,BITS_PER_PIXEL=24
       sub_map, themap,pmap, ref_map=binmap
@@ -2042,8 +2187,8 @@ PRO drawi_event, ev                                          ; event handler
         widget_control, ids.draw_erase, get_value=draw_erase_val
         
         c_struct=circ_struct & c_struct[*]=0
-        c_struct[where(circ_struct le brushsize)]=1
-        brushdex=where(c_struct eq 1)
+        c_struct[where(circ_struct le brushsize,/null)]=1
+        brushdex=where(c_struct eq 1,/null)
  
         
         if draw_erase_val eq 'Drawing Mode' then begin & draw_binmap.data[brushdex]=1 & drawcol='red' & endif else begin & draw_binmap.data[brushdex]=0 & drawcol='blue' & endelse             
@@ -2117,7 +2262,7 @@ PRO drawi_event, ev                                          ; event handler
       if morph_value ne 0 then  begin
         dist_circle, circ_struct, 30
         c_struct=circ_struct &  c_struct[*]=1
-        c_struct[where(circ_struct gt morph_value)]=0
+        c_struct[where(circ_struct gt morph_value,/null)]=0
 
           draw_binmap.data=morph_open(draw_binmap.data,c_struct)
           draw_binmap.data=morph_close(draw_binmap.data,c_struct)
@@ -2149,7 +2294,7 @@ PRO drawi_event, ev                                          ; event handler
           ch_prop=make_array(7,11); binmaps1-5, average, stddev;area, meanint, medianint, com_lng, com_lat, com_xc, com_yc, lng_min, lng_max, lat_min, lat_max
           meanint_prop=make_array(5,3)
 
-            helpmap=chmap    &  helpmap.data[where(chmap.data eq 0)]=!values.f_nan
+            helpmap=chmap    &  helpmap.data[where(chmap.data eq 0,/null)]=!values.f_nan
             curve_corr, helpmap, corr_map,coreg=coreg,area=area
 
             if map_identifyer eq 'SOHO' then begin & mc_obs='SOHO' & endif else begin
@@ -2162,8 +2307,8 @@ PRO drawi_event, ev                                          ; event handler
             calc_masscenter, corr_map, xy_center,coord=coord, coreg = coreg, observer=mc_obs
 
             ch_prop[i,0]=area
-            ch_prop[i,1]=median(workmap.data[where(chmap.data eq 1)])
-            meanint_mom=(moment(workmap.data[where(chmap.data eq 1)],/nan,maxmoment=2))
+            ch_prop[i,1]=median(workmap.data[where(chmap.data eq 1,/null)])
+            meanint_mom=(moment(workmap.data[where(chmap.data eq 1,/null)],/nan,maxmoment=2))
             ch_prop[i,2]=meanint_mom[0]
             ch_prop[i,3]=xy_center[1] &  ch_prop[i,4]=xy_center[0]
             ch_prop[i,5]=coord[0] & ch_prop[i,6]=coord[1]
@@ -2172,7 +2317,7 @@ PRO drawi_event, ev                                          ; event handler
             mcrpix2=comp_fits_crpix(chmap.yc,chmap.dy,n_elements(chmap.data[0,*]),0.)
             mapdate=anytim(chmaps[i].time,/ccsds)
             
-            ind = ARRAY_INDICES(chmap.data, where(chmap.data eq 1))
+            ind = ARRAY_INDICES(chmap.data, where(chmap.data eq 1,/null))
             ind_coord = [ ( ind[0,*] - (mcrpix1)) * chmap.dx , (ind[1,*] - (mcrpix2 )) * chmap.dy ]
             if map_identifyer eq 'SOHO' then begin & ang=pb0r(workmap.time, /soho, l0=l0,/arcsec) & endif else begin
               if map_identifyer eq 'SDO'  then begin & ang=pb0r(workmap.time, /earth, l0=l0,/arcsec) & endif else begin
@@ -2233,8 +2378,11 @@ PRO drawi_event, ev                                          ; event handler
           WIDGET_CONTROL, ids.vlabel_lat_err, SET_VALUE=strtrim(STRING(ch_prop[6,4], format='(F15.3)'),2)
           WIDGET_CONTROL, ids.vlabel_exlng_err, SET_VALUE=strtrim(STRING(ch_prop[6,7], format='(F15.2)'),2)+' | '+strtrim(STRING(ch_prop[6,8], format='(F15.2)'),2)
           WIDGET_CONTROL, ids.vlabel_exlat_err, SET_VALUE=strtrim(STRING(ch_prop[6,9], format='(F15.2)'),2)+' | '+strtrim(STRING(ch_prop[6,10], format='(F15.2)'),2)
-
-
+          
+          cf=!values.f_nan
+          WIDGET_CONTROL, ids.vlabel_category, SET_VALUE=strtrim(STRING(cf, format='(F15.1)'),2)
+          WIDGET_CONTROL, ids.vlabel_mean, SET_VALUE='Value'
+          
           WSET, ids.logoID_traffic_lights
     graycol=194
     lights=make_array(3,16,16) & lights[0,*,*]=graycol & lights[1,*,*]=graycol & lights[2,*,*]=graycol
@@ -2280,25 +2428,35 @@ common version, version
 close,/all
 openw,1,path
   
-in[where(finite(in) eq 0)]=9999
-in[where(in eq 0)]=9999
+ A=[15.82  ,   0.10  ,  -6.02]
+cf=(in[6,0]/in[5.0])*100/(A[0]*(in[5,0]/1e10)^(-1*A[1])+A[2])
+
+if finite(cf) eq 0 then cf=9999
+if cf eq 0 then cf=9999
+
+in[6,0]=in[6,0]/1e10
+in[5,0]=in[5,0]/1e10
+
+in[where(finite(in) eq 0,/null)]=9999
+in[where(in eq 0,/null)]=9999
 
 printf, 1, ';### Coronal hole properties extracted from EUV ###'
-printf, 1, ';### CATCH TOOL Version '+version+' ###'
-printf, 1, ';Observer   Date Observed   Threshold [%]   Threshold [DN]   Area [10^10 km^2]    Area Sigma [10^10 km^2]     Mean Intensity [DN]     Mean Intensity Sigma [DN]   Median Intensity [DN]   Median Intensity Sigma [DN]'+$
+printf, 1, ';### CATCH Version '+version+' ###'
+printf, 1, ';Observer   Date Observed   Threshold [%]   Threshold [DN]   Category Factor   Area [10^10 km^2]    Area Sigma [10^10 km^2]     Mean Intensity [DN]     Mean Intensity Sigma [DN]   Median Intensity [DN]   Median Intensity Sigma [DN]'+$
            '    Center of Mass Longitude [°]   Center of Mass Longitude Sigma [°]   Center of Mass Latitude [°]    Center of Mass Latitude Sigma [°]'+$
            '    Longitudinal Extent (East) [°]   Longitudinal Extent Sigma (East) [°]   Longitudinal Extent (West) [°]   Longitudinal Extent Sigma (West) [°]',$
            '    Latitudinal Extent (South) [°]   Latitudinal Extent Sigma (South) [°]   Latitudinal Extent (North) [°]   Latitudinal Extent Sigma (North) [°]'
-printf, 1,   obs+'  '+obs_date+'  '+strtrim(STRING(thr_in[0], format='(I)'),2)+'  '+strtrim(STRING(thr_in[1], format='(I)'),2)+'  '+$
-                                    strtrim(STRING(in[5,0]/1e10, format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,0]/1e10, format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,2], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,2], format='(D15.5)'),2)+'  '+$
+printf, 1,   obs+'  '+obs_date+'  '+strtrim(STRING(thr_in[0], format='(I)'),2)+'  '+strtrim(STRING(thr_in[1], format='(I)'),2)+'  '+strtrim(STRING(cf, format='(D15.2)'),2)+'  '+$
+                                    strtrim(STRING(in[5,0], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,0], format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,2], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,2], format='(D15.5)'),2)+'  '+$
                                     strtrim(STRING(in[5,1], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,1], format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,3], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,3], format='(D15.5)'),2)+'  '+$
                                     strtrim(STRING(in[5,4], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,4], format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,7], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,7], format='(D15.5)'),2)+'  '+$
                                     strtrim(STRING(in[5,8], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,8], format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,9], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,9], format='(D15.5)'),2)+'  '+$
                                     strtrim(STRING(in[5,10], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,10], format='(D15.5)'),2)
 printf, 1, ';##############################'
+printf, 1, ';### NaN are represented by a value of 9999.
 printf, 1, ';### You may read this with idl using the following ssw routine:'
-printf, 1, ';### readcol, file, x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20,x21,x22,$'
-printf, 1, ';### format='+string(39B)+'(A,A,I,I,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5)'+string(39B)+',STRINGSKIP='+string(39B)+';'+string(39B)
+printf, 1, ';### readcol, file, x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20,x21,x22,x23,$'
+printf, 1, ';### format='+string(39B)+'(A,A,I,I,D15.2,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5,D15.5)'+string(39B)+',STRINGSKIP='+string(39B)+';'+string(39B)
 printf, 1, ';##############################'
 
 close, /all
