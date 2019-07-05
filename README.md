@@ -5,4 +5,4 @@ Catch was created in order to collect and structure coronal hole identification,
 
 It features a SSW IDL Graphical User Interface (GUI) to efficently analyze coronal holes.
 
-If you have any comments, suggestions or need help. Please contact the author via E-mail (stephan.heinemann@hmail.at).
+If you have any comments, suggestions or need help. Please contact the author via E-mail (stephan.heinemann@hmail.at) or leave a request here on github.
