@@ -17,7 +17,7 @@
 ;
 ; INPUTS:
 ;       193A/195A Filtergrams
-;       Photospheric Manetograms
+;       Photospheric Magnetograms
 ;
 ;
 ; OUTPUTS:
@@ -65,7 +65,7 @@
 ;                     -Reworked properties handling
 ;                               - Changed the configuration file from '*.txt' to '*.ini'
 ;                               - Added 'Properties' window accessible via the 'Main Menu' window
-;                               - Properties may now configured from within the CATCH tool and will be saved in the configuration file and may be restored
+;                               - Properties may now configured from within CATCH and will be saved in the configuration file and may be restored
 ;                               - Possibility to save the current configuration of the workspace without using the 'Properties' window (disabled by default, can be enabled in the 'Properties' window)
 ;                               - Added more options to be modified by the user
 ;             -Minor Changes
@@ -73,14 +73,35 @@
 ;                               - 'DATA DIRECTORY' --> 'DOWNLOAD DIRECTORY'   (in the download widget)
 ;                     -Various bugfixing
 ;                     -Added license file
-;                                                               
+;
+;        April 2019: (v2.11beta):
+;             -Major Changes
+;                     -New CATCH Logo
+;             -Minor Changes
+;                     -Various bugfixing
+;                     
+;        July 2019: (v1.00):  RELEASE
+;             -Major Changes
+;                     -Added the category factor to the coronal hole extraction (as described in Heinemann et al. 2019)
+;                               - Displays the stability ohighf the boundar
+;                                   - <1  : high stability
+;                                   - 1-2 : medium stability
+;                                   - >2  : low stability
+;                               - Added a color box that displays the level of stability (green: high; orange: medium; red: low)
+;                     -Removed the estimation for the goodness of the boundary extracted using a 3 color circle 
+;             -Minor Changes
+;                     -Added the option to turn oon/off the uncertainty calculations
+;                     -Added the CATCH logo to .eps full disk output files from coronal holes extraction and magnetic field analysis
+;                     -Changed the displayed uncertainties to from contours to shaded areas (blue)
+;                     -Various bugfixing    
+;                                                                                                  
 ;*******************************************************************************************
 ;-
 ;
 ;########################### Main Menu ####################################
 pro catch_main
 
-  ;##################### activate all sub-programs
+  ;##################### compile all sub-programs
 
   ;Widget Tree
   RESOLVE_ROUTINE, 'dl_widget', /COMPILE_FULL_FILE, /EITHER
@@ -101,36 +122,32 @@ pro catch_main
     '                                                                                ',$
     '                 Collection of Analysis Tools for Coronal Holes                 ',$
     '                                                                                ',$
-    '          Version v2.10beta   March, 2019                                       ',$
+    '          Version v1.00       July, 2019                                        ',$
     '                                                                                ',$
-    '          Developed by:       Stephan G. Heinemann*                             ',$
+    '          Developed by:       Stephan G. Heinemann                              ',$
     '                                                                                ',$
-    '          Contributors:       Stefan J. Hofmeister*                             ',$
-    '                              Manuela Temmer*                                   ',$
-    '                              Karin Dissauer*                                   ',$
-    '                              Astrid Veronig*                                   ',$
-    '                              Evangelia Samara**                                ',$
-    '                              Veronika Jercic*                                  ',$
+    '          Contributors:       Manuela Temmer                                    ',$
+    '                              Niko Heinemann                                    ',$
+    '                              Karin Dissauer                                    ',$
+    '                              Evangelia Samara                                  ',$
+    '                              Veronika Jercic                                   ',$
+    '                              Stefan J. Hofmeister                              ',$
+    '                              Astrid Veronig                                    ',$
     '                                                                                ',$
     '          A special thanks goes to all the Testers.                             ',$
     '                                                                                ',$
-    '          Before use, please read the user manual (not yet available).          ',$
+    '          Before use, please read the user manual.                              ',$
     '                                                                                ',$
     '          If you have any problems, questions, ideas or suggestions,            ',$
     '          please contact the author at:  stephan.heinemann@hmail.at             ',$
     '                                                                                ',$
     '          Changelog:                                                            ',$
-    '                    -Major update from 1.10 to v2.00beta                        ',$
-    '                    -Properties Feature added in v2.10beta                      ',$
+    '                    -RELEASE of v1.00 in July 2019                              ',$
     '                    -Changelog can be found in                                  ',$
     '                     the catch_main.pro file                                    ',$
     '                                                                                ',$
     '                                                                                ',$
-    '          *University of Graz, Institute of Physics,                            ',$
-    '                 Universitätsplatz 5, 8010 Graz, Austria                        ',$
-    '                                                                                ',$
-    '          **Solar-Terrestrial Center of Excellence, SIDC,                       ',$
-    '                 Royal Observatory of Belgium, Brussels, Belgium                ',$
+    '         For information please see:      Heinemann et al. 2019, submitted      ',$           
     '                                                                                '],$
     title='CATCH',/information, /center)
   ;#####################
@@ -138,9 +155,9 @@ pro catch_main
   common general, id, paths,dir,debug
   common menu_id, menuid
   common version, version
-  version='v2.10beta'
+  version='v1.00'
 
-  debug =1
+  debug =0   ; debug mode if set to 1
   
   screen=get_screen_size()
   
@@ -173,38 +190,42 @@ pro catch_main
   
 ;###### Logos  
 
-  logo_draw_catch = widget_draw(menu, uvalue='logo_catch', xsize=500, ysize=205, yoffset=55, xoffset=10, RENDERER=1)
+  logo_draw_catch = widget_draw(menu, uvalue='logo_catch', xsize=500, ysize=163, yoffset=55+21, xoffset=10, RENDERER=1)
   
   WIDGET_CONTROL, logo_draw_catch, GET_VALUE=logoID_catch
   WSET, logoID_catch
   
-  logo_path=dir+'/catch_logo.jpg'
+  logo_path=dir+'catch.jpg'
   read_jpeg,logo_path, logo
-  logo=congrid(logo,3,500,205,/center)
+  logo=congrid(logo,3,500*3,163*3,/center)
   tvimage, logo
   
-  logo_draw= widget_draw(menu, uvalue='logo', xsize=100, ysize=100, yoffset=45, xoffset=525, RENDERER=1)
+  logo_draw= widget_draw(menu, uvalue='logo', xsize=100, ysize=86, yoffset=45+7, xoffset=525, RENDERER=1)
     WIDGET_CONTROL, logo_draw, GET_VALUE=logoID
   WSET, logoID
 
-  logo_path=dir+'/swe_logo.tiff';'/home/sgh/CH_widget/Default/swe_logo.tiff'
-  logo=read_tiff(logo_path, orientation=o);,r,g,b);, interlace=2)
-  logo_rgb=logo[0:2,*,*]
-  logo_rgb=congrid(logo_rgb,3,200,100,/center)
+  ;logo_path=dir+'swe_logo.tiff';'/home/sgh/CH_widget/Default/swe_logo.tiff'
+  ;logo=read_tiff(logo_path, orientation=o);,r,g,b);, interlace=2)
+  ;logo_rgb=logo[0:2,*,*]
+  ;logo_rgb=congrid(logo_rgb,3,200,100,/center)
 
-  for i=0, 2 do begin
-    help_array=make_array(200,100)
-    help_array[*,*]=logo_rgb[i,*,*]
-    logo_rgb[i,*,*]=rotate(help_array,7)
-  endfor
-  tvimage, logo_rgb
+;  for i=0, 2 do begin
+;    help_array=make_array(200,100)
+;    help_array[*,*]=logo_rgb[i,*,*]
+;    logo_rgb[i,*,*]=rotate(help_array,7)
+;  endfor
+
+logo_path_ug=dir+'logo_uni_graz.jpg'
+read_jpeg,logo_path_ug, logo_ug
+logo_ug=congrid(logo_ug,3,100*2,86*2,/center)
+tvimage, logo_ug
   
   
-  logo_ffg_draw = widget_draw(menu, uvalue='ffglogo', xsize=100, ysize=50., yoffset=150, xoffset=525, RENDERER=1)
+  logo_ffg_draw = widget_draw(menu, uvalue='ffglogo', xsize=100, ysize=50., yoffset=145, xoffset=525, RENDERER=1)
   
  WIDGET_CONTROL, logo_ffg_draw, GET_VALUE=logoIDffg
   WSET, logoIDffg
-  logo_path=dir+'/ffg_logo.png'
+  logo_path=dir+'ffg_logo.png'
   read_png,logo_path, ffglogo
   ;ffglogo=congrid(ffglogo,3,200,100,/center)
   tvimage, ffglogo
@@ -229,6 +250,7 @@ endif else begin
   WIDGET_CONTROL, main,/destroy
 endelse
 endelse
+
 ;###### IDs
 
   menuid={dl:dl,ex:ex,mag:mag}
@@ -390,8 +412,8 @@ PRO main_menu_event, ev                                          ; event handler
       reso_euv=widget_label(chandling,value=  'EUV Resolution', uval='reso_euv', xsize= 90, xoffset=10, yoffset=15,ysize=25,/align_left)
       cbox_reso_euv=widget_combobox(chandling,value=['256x256','512x512' ,'1024x1024','2048x2048','4096x4096'], uval='cbox_reso_euv', xsize= 90, xoffset=100, yoffset=15,ysize=25)
 
-      reso_mag=widget_label(chandling,value=  'MAG Resolution', uval='reso_mag', xsize= 90, xoffset=10, yoffset=55,ysize=25,/align_left)
-      cbox_reso_mag=widget_combobox(chandling,value=['256x256','512x512' ,'1024x1024','2048x2048','4096x4096'], uval='cbox_reso_mag', xsize= 90, xoffset=100, yoffset=55,ysize=25)
+      reso_mag=widget_label(chandling,value=  'MAG Resolution', uval='reso_mag', xsize= 90, xoffset=10, yoffset=50,ysize=25,/align_left)
+      cbox_reso_mag=widget_combobox(chandling,value=['256x256','512x512' ,'1024x1024','2048x2048','4096x4096'], uval='cbox_reso_mag', xsize= 90, xoffset=100, yoffset=50,ysize=25)
       
       case paths.res_euv of
         256:COMBOBOX_def=0
@@ -411,11 +433,13 @@ PRO main_menu_event, ev                                          ; event handler
       endcase
       widget_control, cbox_reso_mag, set_combobox_select=COMBOBOX_def
       
-      chandlingb = Widget_Base(chandling, xsize=180, ysize=50,/nonexclusive, yoffset=100, xoffset=10)
+      chandlingb = Widget_Base(chandling, xsize=180, ysize=80,/nonexclusive, yoffset=80, xoffset=10)
       
-      lbc= widget_button(chandlingb,value='LBC ', uval='save', tooltip='Enable Limb Brightening Correction', xsize=120)
+      uncert= widget_button(chandlingb,value='Uncertainty calculations ', uval='uncert', tooltip='Enable uncertainty calculations for coronal hole extraction and parameter calculation', xsize=120)
+      lbc= widget_button(chandlingb,value='LBC ', uval='lbc', tooltip='Enable Limb Brightening Correction', xsize=120)
       lock= widget_button(chandlingb,value='Lock properties', uval='lock', tooltip='Locks the properties, disabling the overwrite option', xsize=120)      
       
+      if paths.uncert eq 'on' then Widget_Control, uncert, Set_Button=1
       if paths.lbc eq 'on' then Widget_Control, lbc, Set_Button=1
       if paths.lock eq 'on' then Widget_Control, lock, Set_Button=1
 
@@ -428,18 +452,20 @@ PRO main_menu_event, ev                                          ; event handler
 
       widget_control, config_main, /realize
 
-      logo_draw_catch_conf = widget_draw(config_main, uvalue='logo_catch_config', xsize=420, ysize=190, yoffset=440, xoffset=220, RENDERER=1)
+      logo_draw_catch_conf = widget_draw(config_main, uvalue='logo_catch_config', xsize=420, ysize=137, yoffset=440+26, xoffset=220, RENDERER=1)
 
       WIDGET_CONTROL, logo_draw_catch_conf, GET_VALUE=logoID_catch_conf
       WSET, logoID_catch_conf
 
-      logo_path=dir+'/catch_logo.jpg'
+      
+      
+      logo_path=dir+'catch.jpg'
       read_jpeg,logo_path, logo
-      logo=congrid(logo,3,420,190,/center)
+      logo=congrid(logo,3,420*3,137*3,/center)
       tvimage, logo
       widget_control, logo_draw_catch_conf, sensitive=0
       
-      cid={abort:abort_config, save:apply_config, lbc:lbc,lock:lock, cbox_euv:cbox_reso_euv,cbox_mag:cbox_reso_mag,dmin_mdi:dmin_text_mdi,dmax_mdi:dmax_text_mdi,$
+      cid={abort:abort_config, save:apply_config, uncert:uncert,lbc:lbc,lock:lock, cbox_euv:cbox_reso_euv,cbox_mag:cbox_reso_mag,dmin_mdi:dmin_text_mdi,dmax_mdi:dmax_text_mdi,$
            dmin_hmi:dmin_text_hmi,dmin_aia:dmin_text_aia,dmin_stereo:dmin_text_stereo,dmin_eit:dmin_text_eit,dmax_eit:dmax_text_eit,dmax_hmi:dmax_text_hmi,$
            dmax_stereo:dmax_text_stereo,dmax_aia:dmax_text_aia,savemap_euv:savmap1,savemap_mag:savmap2,saveeps_euv:saveps1,saveeps_mag:saveps2,saveeps_ft:saveps3,$
            savepng_euv:savpng1,savepng_mag:savpng2,savepng_ft:savpng3,mag_path:mag_path_text,save_path:save_path_text,euv_path:euv_path_text,dl_path:dl_path_text,$
@@ -777,10 +803,11 @@ PRO config_event, ev                                          ; event handler
         '256x256'  : val1=256
       endcase
       new_paths.res_mag=val1
+      if widget_info(cid.uncert,/button_set) eq 1 then new_paths.uncert ='on' else new_paths.uncert ='off'
       if widget_info(cid.lbc,/button_set) eq 1 then new_paths.lbc ='on' else new_paths.lbc ='off'
       if widget_info(cid.lock,/button_set) eq 1 then new_paths.lock ='on' else new_paths.lock ='off'
       
-      write_ini_catch, dir+'/config_CATCH.ini', new_paths,id.main, /struct_old  
+      write_ini_catch, dir+'config_CATCH.ini', new_paths,id.main, /struct_old  
       paths=new_paths
       WIDGET_CONTROL, cid.config_main,/destroy
       end
@@ -791,8 +818,8 @@ PRO config_event, ev                                          ; event handler
                              '    the default values?     ',$
                              '                            '], dialog_parent=cid.config_main,/question)
         if res eq 'Yes' then begin
-          write_ini_catch, dir+'/config_CATCH.ini', 1, /create_default
-          read_ini_catch,dir+'/config_CATCH.ini', paths
+          write_ini_catch, dir+'config_CATCH.ini', 1, /create_default
+          read_ini_catch,dir+'config_CATCH.ini', paths
         WIDGET_CONTROL, cid.config_main,/destroy
         endif else return
         end
@@ -972,9 +999,10 @@ PRO read_ini_catch, filename, struct
     endelse
   endfor
 
+
   if valid_num(ini[26,1]) eq 0 then begin
     if ini[26,1] ne 'on' and ini[26,1] ne 'off' then begin
-      ini[26,1]='off'
+      ini[26,1]='on'
       print,'% ERROR in .ini file encountered, default value subsituted.'
     endif
   endif else begin
@@ -992,12 +1020,22 @@ PRO read_ini_catch, filename, struct
     print,'% ERROR in .ini file encountered, default value subsituted.'
   endelse
 
+  if valid_num(ini[28,1]) eq 0 then begin
+    if ini[28,1] ne 'on' and ini[28,1] ne 'off' then begin
+      ini[28,1]='on'
+      print,'% ERROR in .ini file encountered, default value subsituted.'
+    endif
+  endif else begin
+    ini[28,1]='off'
+    print,'% ERROR in .ini file encountered, default value subsituted.'
+  endelse
+  
   struct={config, euvpath:ini[0,1],magpath:ini[1,1],dlpath:ini[2,1],outpath:ini[3,1],smaps_euv:ini[4,1],smaps_mag:ini[5,1],$
     euv_eps:ini[6,1],mag_eps:ini[7,1],ft_eps:ini[8,1],euv_png:ini[9,1],mag_png:ini[10,1],ft_png:ini[11,1],$
     gridsize:fix(ini[12,1]),cthick:fix(ini[13,1]),aia_range:[long(ini[14,1]),long(ini[15,1])],$
     eit_range:[long(ini[16,1]),long(ini[17,1])],stereo_range:[long(ini[18,1]),long(ini[19,1])],$
     mdi_range:[long(ini[20,1]),long(ini[21,1])],hmi_range:[long(ini[22,1]),long(ini[23,1])],$
-    res_euv:fix(ini[24,1]),res_mag:fix(ini[25,1]),lbc:ini[26,1],lock:ini[27,1]}
+    res_euv:fix(ini[24,1]),res_mag:fix(ini[25,1]),uncert:ini[26,1],lbc:ini[27,1],lock:ini[28,1]}
 
 
 end
@@ -1075,6 +1113,7 @@ PRO write_ini_catch, filename, struct,parent_id, struct_old=struct_old, create_d
       if struct.hmi_range[1] ne paths.hmi_range[1] then outputvec=[outputvec,' HMI Dmax: '+strtrim(string(paths.hmi_range[1]),2)+'  -->>  ' +strtrim(string(struct.hmi_range[1]),2)+' ']
       if struct.res_euv ne paths.res_euv then outputvec=[outputvec,' EUV RESOLUTION: '+strtrim(string(paths.res_euv),2)+'  -->>  ' +strtrim(string(struct.res_euv),2)+' ']
       if struct.res_mag ne paths.res_mag then outputvec=[outputvec,' MAG RESOLUTION: '+strtrim(string(paths.res_mag),2)+'  -->>  ' +strtrim(string(struct.res_mag),2)+' ']
+      if struct.uncert ne paths.uncert then outputvec=[outputvec,' UNCERTAINTY CALCULATIONS: '+paths.uncert+'  -->>  ' +struct.uncert+' ']
       if struct.lbc ne paths.lbc then outputvec=[outputvec,' LBC: '+paths.lbc+'  -->>  ' +struct.lbc+' ']
       if struct.LOCK ne paths.lock then outputvec=[outputvec,' LOCK CONFIG: '+paths.lock+'  -->>  ' +struct.lock+' ']
       
@@ -1146,6 +1185,8 @@ PRO write_ini_catch, filename, struct,parent_id, struct_old=struct_old, create_d
     printf,1,';# possible values: 256,512,1024,2048,4096'
     printf,1,'euv_resolution:'+'  '+strtrim(string(struct.res_euv),2)
     printf,1,'mag_resolution:'+'  '+strtrim(string(struct.res_mag),2)
+    printf,1,';#Uncertainty calculations default status (on/off)'
+    printf,1,'uncertainty_calculation:'+'  '+struct.uncert
     printf,1,';#LBC default status (on/off)'
     printf,1,'lbc:'+'  '+struct.lbc
     printf,1,';######'
@@ -1159,9 +1200,9 @@ PRO write_ini_catch, filename, struct,parent_id, struct_old=struct_old, create_d
   endif else begin
 
     if file_test(filename) eq 1 then begin
-      dir=file_dirname(filename)
+      dire=file_dirname(filename)
       name=file_basename(filename,'.ini')
-      file_move, filename,dir+'/'+name+'_old.ini',/overwrite
+      file_move, filename,dire+'/'+name+'_old.ini',/overwrite
     endif
 
     close,/all
@@ -1218,6 +1259,8 @@ PRO write_ini_catch, filename, struct,parent_id, struct_old=struct_old, create_d
     printf,1,';# possible values: 256,512,1024,2048,4096'
     printf,1,'euv_resolution:'+'  1024'
     printf,1,'mag_resolution:'+'  1024'
+    printf,1,';#Uncertainty calculations default status (on/off)'
+    printf,1,'uncertainty_calculation:'+'  on'
     printf,1,';#LBC default status (on/off)'
     printf,1,'lbc:'+'  off'
     printf,1,';######'

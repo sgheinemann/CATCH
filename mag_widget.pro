@@ -155,14 +155,14 @@ undefine, plot_scl
 
 WIDGET_CONTROL, draww, GET_VALUE=drawID
 
-  logo_draw_catch = widget_draw(mag_main, uvalue='logo_catch', xsize=230, ysize=98, yoffset=542, xoffset=740)
+  logo_draw_catch = widget_draw(mag_base, uvalue='logo_catch', xsize=230, ysize=75, yoffset=542+11, xoffset=740)
 
   WIDGET_CONTROL, logo_draw_catch, GET_VALUE=logoID_catch
   WSET, logoID_catch
 
-  logo_path=dir+'catch_logo.jpg'
+  logo_path=dir+'catch.jpg'
   read_jpeg,logo_path, logo
-  logo=congrid(logo,3,230*2,98*2,/center)
+  logo=congrid(logo,3,230*8,75*8,/center)
   tvimage, logo
   widget_control, logo_draw_catch, sensitive=0
 
@@ -360,11 +360,11 @@ PRO mag_event, ev                                          ; event handler
       endcase
       
       binnum=list()
-      binnum.add, where(binmap.data gt 0.5 and binmap.data lt 1.5)
-      binnum.add, where(binmap.data gt 0.5 and binmap.data lt 2.5)
-      binnum.add, where(binmap.data gt 0.5 and binmap.data lt 3.5)
-      binnum.add, where(binmap.data gt 0.5 and binmap.data lt 4.5)
-      binnum.add, where(binmap.data gt 0.5 and binmap.data lt 5.5)
+      binnum.add, where(binmap.data gt 0.5 and binmap.data lt 1.5,/null)
+      binnum.add, where(binmap.data gt 0.5 and binmap.data lt 2.5,/null)
+      binnum.add, where(binmap.data gt 0.5 and binmap.data lt 3.5,/null)
+      binnum.add, where(binmap.data gt 0.5 and binmap.data lt 4.5,/null)
+      binnum.add, where(binmap.data gt 0.5 and binmap.data lt 5.5,/null)
       
       
       if abs(n_elements(binnum[0])-n_elements(binnum[1])) le 1 and abs(n_elements(binnum[0])-n_elements(binnum[2])) le 1 and abs(n_elements(binnum[0])-n_elements(binnum[3])) le 1 and $
@@ -388,19 +388,19 @@ PRO mag_event, ev                                          ; event handler
        helpmap=imagmap
        imagmap=drot_map(imagmap, time=binmap.time)
        sub_map, imagmap, magmap, ref_map=binmap
-       bmap=coreg_map(sbinmaps[0],magmap,/derotate,/rescale) & bmap.data[where(bmap.data gt 0 )]=1 & binmaps=replicate(bmap,5) 
+       bmap=coreg_map(sbinmaps[0],magmap,/derotate,/rescale) & bmap.data[where(bmap.data gt 0,/null )]=1 & binmaps=replicate(bmap,5) 
        for mapi=1, 4 do begin
         bmap=coreg_map(sbinmaps[mapi],magmap,/derotate,/rescale)
         binmaps[mapi]=bmap
-        binmaps[mapi].data[where(binmaps[mapi].data gt 0)]=1
+        binmaps[mapi].data[where(binmaps[mapi].data gt 0,/null)]=1
        endfor
       
        
-       dex1=where(binmaps[0].data eq 1 )
-       dex2=where(binmaps[1].data eq 1 )
-       dex3=where(binmaps[2].data eq 1 )
-       dex4=where(binmaps[3].data eq 1 )
-       dex5=where(binmaps[4].data eq 1 )
+       dex1=where(binmaps[0].data eq 1 ,/null)
+       dex2=where(binmaps[1].data eq 1 ,/null)
+       dex3=where(binmaps[2].data eq 1 ,/null)
+       dex4=where(binmaps[3].data eq 1 ,/null)
+       dex5=where(binmaps[4].data eq 1 ,/null)
 
       
       curve_corr, magmap,cmap, coreg=mag_corr
@@ -408,7 +408,7 @@ PRO mag_event, ev                                          ; event handler
       magmap=helpmap
       pmap=cmap
       ;stop
-      cmap.data[where(binmap.data eq 0)]=!values.f_nan
+      cmap.data[where(binmap.data eq 0,/null)]=!values.f_nan
       map2index, cmap, cindex
 
       angles=get_map_angles(cmap)
@@ -482,8 +482,7 @@ PRO mag_event, ev                                          ; event handler
       mag_prop[4,12]=bindex.area_5
       helpvar=moment(mag_prop[0:4,12]/1e10,/nan, maxmoment=1)
       mag_prop[5,12]=helpvar[0]*1e10
-      mag_prop[6,12]=max(sqrt(mag_prop[0:4,12]-mag_prop[5,12])^2)
-      
+      mag_prop[6,12]=max(sqrt((mag_prop[0:4,12]-mag_prop[5,12])^2))
 
       if custom eq 1 then begin
         for k=0, 5 do mag_prop[6,k]=!values.f_nan
@@ -538,8 +537,12 @@ PRO mag_event, ev                                          ; event handler
 
       
       plot_map, pmap, dmin=plot_scl[0],dmax=plot_scl[1],window=!D.Window, position=pos, grid_spacing=plot_scl[2], tit=' '
-      plot_map, binmaps[0], /over, /cont, color=cgcolor('blue'),c_thick=plot_scl[3], c_linestyle=0
-      plot_map, binmaps[4], /over, /cont, color=cgcolor('blue'),c_thick=plot_scl[3], c_linestyle=0
+      
+      if custom eq 0 then begin
+      emap=binmaps[4] & emap.data[where(binmaps[0].data eq 1,/null)]=0
+      plot_map, emap, /over, /cont, color=cgcolor('blue'),/overlay, contour=1,/cell_fill,levels=[1]
+      endif
+      
       plot_map, binmaps[2], /over, /cont, color=cgcolor('red'),c_thick=plot_scl[3], c_linestyle=0
       
       xyouts, 0.5,0.01,strmid(bindex.date_obs,0,16), color=cgcolor('white'), charsize=1.5, charthick=1.5,/norm, alignment=0.5
@@ -618,7 +621,7 @@ PRO mag_event, ev                                          ; event handler
     
     help_mag_map=pmap;magmap; & help_mag_map.data[*]
     ;pmap
-    help_mag_map.data[where(binmaps[count_bmap].data ne 1)]= !values.f_nan; magmap.data[where(binmaps[count_bmap].data eq 1)]
+    help_mag_map.data[where(binmaps[count_bmap].data ne 1,/null)]= !values.f_nan; magmap.data[where(binmaps[count_bmap].data eq 1)]
     ;stop
     
     extract_ch, help_mag_map, out, -20, 20,/inverse,/silent   ; extract FT +/- 20 G
@@ -639,7 +642,7 @@ PRO mag_event, ev                                          ; event handler
     for j=0, n_elements(out)-1 do begin
       ;-------------------------
       ;if j mod modular eq 0 then begin
-        if barcount lt 249 then begin
+        if barcount lt (249-modular) then begin
         barcount=barcount+modular
         bar[2,0:barcount,*]=255 & bar[1,0:barcount,*]=255
         tvimage, bar
@@ -818,6 +821,7 @@ PRO mag_event, ev                                          ; event handler
         outname_ftspng=save_path+date_format+'_'+obs+'_'+reso_bin+'_'+reso+'_FT_map_'+strtrim(string(file_number),2)+'.png 
       endelse
       
+
       magproperties2txt, mag_prop,outname_prop , obs, strmid(pindex.date_obs,0,19)
       
       if paths.smaps_mag eq 'y' then save, filename=outname_save, description='CATCH:MAG', pmap,binmap
@@ -838,7 +842,12 @@ PRO mag_event, ev                                          ; event handler
       plot_map, magmap, dmin=plot_scl[0],dmax=plot_scl[1], title=strmid(pindex.date_obs,0,16),$
         position=[0.2,0.2,0.9,0.9],grid_spacing=plot_scl[2],charthick=2,charsize=0.7, xrange=[-1100,1100], yrange=[-1100,1100] 
       plot_map, binmaps[2], /over, /cont, color=cgcolor('red'),c_thick=plot_scl[3], c_linestyle=0
-
+      
+      logo_path=dir+'catch.jpg'
+      read_jpeg,logo_path, logo
+      ;logo=congrid(logo,3,230*8,75*8,/center)
+      tvimage, logo, position=[0.746,0.2,0.9,0.25]
+      
       DEVICE, /CLOSE_FILE
       SET_PLOT, 'X'
       
@@ -870,7 +879,7 @@ PRO mag_event, ev                                          ; event handler
         SET_PLOT, 'PS'
         device, filename=outname_fts,xsize = x_size, ysize = y_size, xoffset = x_offset, yoffset = y_offset, encaps = 1,color=1,decomposed=1, landscape=0,BITS_PER_PIXEL=24
 
-  emap=pmap & emap.data[*]=!values.f_nan & emap.data[where(binmaps[2].data eq 1)]=pmap.data[where(binmaps[2].data eq 1)]
+  emap=pmap & emap.data[*]=!values.f_nan & emap.data[where(binmaps[2].data eq 1,/null)]=pmap.data[where(binmaps[2].data eq 1,/null)]
   extract_ch, emap, out, -20, 20,/inverse,/silent   ; extract FT +/- 20 G
 
   restore, dir+'ft_colors.sav'
@@ -902,8 +911,8 @@ plotsym,8,1./(n_elements(pmap.data[*,0]))^3*1e3,/fill
 
     ftm=outi
     ftm.data[*]=0
-    ftm.data[where(finite(outi.data) eq 1)]=1
-    dim_pixel_arr=where(ftm.data eq 1.0)
+    ftm.data[where(finite(outi.data) eq 1,/null)]=1
+    dim_pixel_arr=where(ftm.data eq 1.0,/null)
     n_dim=n_elements(dim_pixel_arr)
     xp=get_map_prop(ftm,/xp)
     yp=get_map_prop(ftm,/yp)
@@ -978,7 +987,7 @@ if paths.ft_png eq 'y' then begin
   !P.Background = 'FFFFFF'xL
 
 
-  emap=pmap & emap.data[*]=!values.f_nan & emap.data[where(binmaps[2].data eq 1)]=pmap.data[where(binmaps[2].data eq 1)]
+  emap=pmap & emap.data[*]=!values.f_nan & emap.data[where(binmaps[2].data eq 1,/null)]=pmap.data[where(binmaps[2].data eq 1,/null)]
   extract_ch, emap, out, -20, 20,/inverse,/silent   ; extract FT +/- 20 G
 
   restore, dir+'ft_colors.sav'
@@ -1002,8 +1011,8 @@ plotsym,8,1./(n_elements(pmap.data[*,0]))^3*1e3,/fill
 
     ftm=outi
     ftm.data[*]=0
-    ftm.data[where(finite(outi.data) eq 1)]=1
-    dim_pixel_arr=where(ftm.data eq 1.0)
+    ftm.data[where(finite(outi.data) eq 1,/null)]=1
+    dim_pixel_arr=where(ftm.data eq 1.0,/null)
     n_dim=n_elements(dim_pixel_arr)
     xp=get_map_prop(ftm,/xp)
     yp=get_map_prop(ftm,/yp)
@@ -1255,8 +1264,10 @@ PRO optmg_event, ev                                          ; event handler
       endif
       
       plot_map, pmap, dmin=plot_scl[0],dmax=plot_scl[1],window=!D.Window, position=pos, grid_spacing=plot_scl[2], tit=' '
-      plot_map, binmaps[0], /over, /cont, color=cgcolor('blue'),c_thick=plot_scl[3], c_linestyle=0
-      plot_map, binmaps[4], /over, /cont, color=cgcolor('blue'),c_thick=plot_scl[3], c_linestyle=0
+      if custom eq 0 then begin
+      emap=binmaps[4] & emap.data[where(binmaps[0].data eq 1,/null)]=0
+      plot_map, emap, /over, /cont, color=cgcolor('blue'),/overlay, contour=1,/cell_fill,levels=[1]
+      endif
       plot_map, binmaps[2], /over, /cont, color=cgcolor('red'),c_thick=plot_scl[3], c_linestyle=0
       
       map2index, binmap, bndex
@@ -1298,19 +1309,26 @@ pro magproperties2txt, in, path, obs, obs_date
   close,/all
   openw,1,path
 
-  in[where(finite(in) eq 0)]=9999
-  in[where(in eq 0)]=9999
+  in[5,12]=in[5,12]/1e10
+  in[6,12]=in[6,12]/1e10
+  in[5,0]=in[5,0]/1e20
+  in[6,0]=in[6,0]/1e20
+  in[5,1]=in[5,1]/1e20
+  in[6,1]=in[6,1]/1e20
+
+  in[where(finite(in) eq 0.,/null)]=9999
+  in[where(in eq 0.,/null)]=9999
 
   printf, 1, ';### Coronal hole properties extracted from Magnetogram ###'
-  printf, 1, ';### CATCH TOOL Version '+version+' ###'
+  printf, 1, ';### CATCH Version '+version+' ###'
   printf, 1, ';Observer   Date Observed    Area [10^10 km^2]    Area Sigma [10^10 km^2]     Signed Mean Magnetic Field Strength [G]    Signed Mean Magnetic Field Strength Sigma [G]      '+$
        'Unsigned Mean Magnetic Field Strength [G]     Unsigned Mean Magnetic Field Strength [G]   Signed Magnetic Flux [10^20 Mx]   Signed Magnetic Flux Sigma [10^20 Mx]       '+$
        'Unsigned Magnetic Flux [10^20 Mx]   Unsigned Magnetic Flux Sigma [10^20 Mx]    Flux Balance [%]   Flux Balance Sigma [%]    Magnetic Field Skewness [ ]   Magnetic Field Skewness Sigma [ ]     '+$
        'Strong Flux Tube Count [Nr]   Strong Flux Tube Count Sigma [Nr]   Strong Flux Tube Flux Ratio [%]   Strong Flux Tube Flux Ratio Sigma [%]   Strong Flux Tube Area Ratio [%]   Strong Flux Tube Area Ratio Sigma [%]'+$
        'Weak Flux Tube Count [Nr]   Weak Flux Tube Count Sigma [Nr]   Weak Flux Tube Flux Ratio [%]   Weak Flux Tube Flux Ratio Sigma [%]   Weak Flux Tube Area Ratio [%]   Weak Flux Tube Area Ratio Sigma [%]'
-  printf, 1,   obs+'  '+obs_date+'  '+strtrim(STRING(in[5,12]/1e10, format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,12]/1e10, format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,2], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,2], format='(D15.5)'),2)+'  '+$
-    strtrim(STRING(in[5,3], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,3], format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,0]/1e20, format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,0]/1e20, format='(D15.5)'),2)+'  '+$
-    strtrim(STRING(in[5,1]/1e20, format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,1]/1e20, format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,4], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,4], format='(D15.5)'),2)+'  '+$
+  printf, 1,   obs+'  '+obs_date+'  '+strtrim(STRING(in[5,12], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,12], format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,2], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,2], format='(D15.5)'),2)+'  '+$
+    strtrim(STRING(in[5,3], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,3], format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,0], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,0], format='(D15.5)'),2)+'  '+$
+    strtrim(STRING(in[5,1], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,1], format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,4], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,4], format='(D15.5)'),2)+'  '+$
     strtrim(STRING(in[5,5], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,5], format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,6], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,6], format='(D15.5)'),2)+'  '+$
     strtrim(STRING(in[5,7], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,7], format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,8], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,8], format='(D15.5)'),2)+'  '+$
     strtrim(STRING(in[5,9], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,9], format='(D15.5)'),2)+'  '+strtrim(STRING(in[5,10], format='(D15.5)'),2)+'  '+strtrim(STRING(in[6,10], format='(D15.5)'),2)+'  '+$
