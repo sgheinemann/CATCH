@@ -1,3 +1,5 @@
 Change uncertainty calculation from % to DN to avoid problems for when 1% < 1DN
 
 Add 'Cancel' button for the overwrite message when saving
+
+Add option to allow multi wavelength input
