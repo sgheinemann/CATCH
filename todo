@@ -1,4 +1,4 @@
-Change uncertainty calculation from % to DN to avoid problems for when 1% < 1DN
+Change uncertainty calculation from % to DN to avoid problems for when 1% < 1DN; or constrain so that 1% is rounded at least 1 DN
 
 Add 'Cancel' button for the overwrite message when saving
 
