@@ -3,3 +3,5 @@ Change uncertainty calculation from % to DN to avoid problems for when 1% < 1DN;
 Add 'Cancel' button for the overwrite message when saving
 
 Add option to allow multi wavelength input
+
+COM calculated for the STEREOs is in HEEQ >> earth based, this can be misleading: should be fixed or clarified
