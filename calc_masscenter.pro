@@ -22,7 +22,7 @@ pro calc_masscenter, inmap, masscenter,coord=coord, observer=observer, coreg = c
   ;
   ;
   ; KEYWORDS:
-  ;       observer ... set type of observer: 'STEREO_A', 'STEREO_B','SOHO'
+  ;       observer ... set type of observer: 'STEREO_A', 'STEREO_B'
   ;                    Default: 'SDO'
   ;
   ;       coreg ... correction array (for radial and area correction)
@@ -41,8 +41,8 @@ pro calc_masscenter, inmap, masscenter,coord=coord, observer=observer, coreg = c
   ;   Modified by: Stephan Heinemann, 22-12-16
   ;                Correction was applied to SDO input to have all coordinates in the correct system ('HEEQ')
   ;
-  ;   Modified by: Stephan Heinemann, 08-01-18
-  ;                Added SOHO as an possible observer
+  ;   Modified by: Stephan Heinemann, 24-07-19
+  ;                If an unknown observer (=/= SDO, STEREO_A, STEREO_B) is forwarded then EARTH is assumed
   ;-
 
   map=inmap
@@ -54,8 +54,9 @@ pro calc_masscenter, inmap, masscenter,coord=coord, observer=observer, coreg = c
   ;  tmpcoreg=1
   ;endelse
   tmpcoreg=fcheck(coreg,1)
-
-  map.data[where(finite(map.data) eq 1)]=1  ; map should be binary!
+  
+  map.data[*]=!values.f_nan
+  map.data[where(finite(inmap.data) eq 1)]=1  ; map should be binary!
 
   date=index.date_obs
   
@@ -66,16 +67,17 @@ endif
 if  keyword_set(observer) eq 1 then begin
   if observer eq 'SDO' then begin
       ang=pb0r(date, /earth, l0=l0,/arcsec)
-  endif
-  if observer eq 'STEREO_A' then begin
+  endif else begin
+    if observer eq 'STEREO_A' then begin
       ang=pb0r(date, STEREO='A', l0=l0,/arcsec)
-  endif
-  if observer eq 'STEREO_B' then begin
-      ang=pb0r(date, STEREO='B', l0=l0,/arcsec)
-  endif
-  if observer eq 'SOHO' then begin
-      ang=pb0r(date, /soho, l0=l0,/arcsec)
-  endif
+    endif else begin
+      if observer eq 'STEREO_B' then begin
+        ang=pb0r(date, STEREO='B', l0=l0,/arcsec)
+      endif else begin
+        ang=pb0r(date, /earth, l0=l0,/arcsec)
+      endelse
+    endelse
+  endelse
 endif
   p=ang[0]
   b0=ang[1]
