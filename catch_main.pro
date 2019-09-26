@@ -93,8 +93,21 @@
 ;                     -Added the option to turn oon/off the uncertainty calculations
 ;                     -Added the CATCH logo to .eps full disk output files from coronal holes extraction and magnetic field analysis
 ;                     -Changed the displayed uncertainties to from contours to shaded areas (blue)
-;                     -Various bugfixing    
-;                                                                                                  
+;                     -Various bugfixing   
+;                      
+;        August 2019: (v1.01):  
+;             -Major Changes
+;                     -changed the error calculations from +/- 2% to +/- 2DN 
+;             -Minor Changes
+;                     -Fixed CoM calculations for SOHO and STEREO; all coordinates are given in HEEQ (longitude, latitude)
+;                     -Various bugfixing         
+;                     
+;        September 2019: (v1.02):
+;             -Major Changes
+;                     -Added the option to use point spread function (PSF) deconvolution on 193 AIA/SDO filtergrams before extraction
+;		                  -Added the option tu use abitrary full-disk filtergrams and magnetograms as input (header must be SDO like, use at your own risk).
+;             -Minor Changes
+;                     -Various Bugfixing                                                                                                          
 ;*******************************************************************************************
 ;-
 ;
@@ -122,7 +135,7 @@ pro catch_main
     '                                                                                ',$
     '                 Collection of Analysis Tools for Coronal Holes                 ',$
     '                                                                                ',$
-    '          Version v1.00       July, 2019                                        ',$
+    '          Version v1.02       September, 2019                                   ',$
     '                                                                                ',$
     '          Developed by:       Stephan G. Heinemann                              ',$
     '                                                                                ',$
@@ -155,7 +168,7 @@ pro catch_main
   common general, id, paths,dir,debug
   common menu_id, menuid
   common version, version
-  version='v1.00'
+  version='v1.02'
 
   debug =0   ; debug mode if set to 1
   
@@ -406,7 +419,7 @@ PRO main_menu_event, ev                                          ; event handler
       label = Widget_Label(top_handling, value='Handling', XOFFSET=10)
       labelGeometry = Widget_Info(label, /GEOMETRY)
       labelYSize =  labelGeometry.ysize
-      chandling = Widget_Base(top_handling, /FRAME, YOFFSET=labelYSize/2, YPAD=10, XPAD=10,xsize=200, ysize=170)
+      chandling = Widget_Base(top_handling, /FRAME, YOFFSET=labelYSize/2, YPAD=10, XPAD=10,xsize=200, ysize=235)
       label = Widget_Label(top_handling, value='Handling', XOFFSET=10)
       
       reso_euv=widget_label(chandling,value=  'EUV Resolution', uval='reso_euv', xsize= 90, xoffset=10, yoffset=15,ysize=25,/align_left)
@@ -433,26 +446,29 @@ PRO main_menu_event, ev                                          ; event handler
       endcase
       widget_control, cbox_reso_mag, set_combobox_select=COMBOBOX_def
       
-      chandlingb = Widget_Base(chandling, xsize=180, ysize=80,/nonexclusive, yoffset=80, xoffset=10)
+      chandlingb = Widget_Base(chandling, xsize=180, ysize=120,/nonexclusive, yoffset=100, xoffset=10)
       
       uncert= widget_button(chandlingb,value='Uncertainty calculations ', uval='uncert', tooltip='Enable uncertainty calculations for coronal hole extraction and parameter calculation', xsize=120)
       lbc= widget_button(chandlingb,value='LBC ', uval='lbc', tooltip='Enable Limb Brightening Correction', xsize=120)
       lock= widget_button(chandlingb,value='Lock properties', uval='lock', tooltip='Locks the properties, disabling the overwrite option', xsize=120)      
+      free= widget_button(chandlingb,value='Free input', uval='free', tooltip='Disables load restrictions and data preparation for input filtergrams and magnetograms. Use at own risk.', xsize=100)   
+      
       
       if paths.uncert eq 'on' then Widget_Control, uncert, Set_Button=1
       if paths.lbc eq 'on' then Widget_Control, lbc, Set_Button=1
       if paths.lock eq 'on' then Widget_Control, lock, Set_Button=1
+      if paths.free eq 'on' then Widget_Control, free, Set_Button=1
+      
 
-
-      abort_config= widget_button(config_main,value='Abort', uval='abort_config',/NO_release, xsize=85 , xoffset=545., yoffset=380, tooltip='Close properties window without saving',ysize=25)
-      reset_config= widget_button(config_main,value='Reset', uval='reset_config',/NO_release, xsize=85 , xoffset=450., yoffset=380, tooltip='Reset configuration to default values and close properties window',ysize=25)
-      apply_config= widget_button(config_main,value='Save', uval='ap_config',/NO_release, xsize=180 , xoffset=450., yoffset=410, tooltip='Save changes and close properties window',ysize=25)
+      abort_config= widget_button(config_main,value='Abort', uval='abort_config',/NO_release, xsize=95 , xoffset=330., yoffset=450, tooltip='Close properties window without saving',ysize=25)
+      reset_config= widget_button(config_main,value='Reset', uval='reset_config',/NO_release, xsize=95 , xoffset=220., yoffset=450, tooltip='Reset configuration to default values and close properties window',ysize=25)
+      apply_config= widget_button(config_main,value='Save', uval='ap_config',/NO_release, xsize=200 , xoffset=440., yoffset=450, tooltip='Save changes and close properties window',ysize=25)
 
 
 
       widget_control, config_main, /realize
 
-      logo_draw_catch_conf = widget_draw(config_main, uvalue='logo_catch_config', xsize=420, ysize=137, yoffset=440+26, xoffset=220, RENDERER=1)
+      logo_draw_catch_conf = widget_draw(config_main, uvalue='logo_catch_config', xsize=420, ysize=137, yoffset=440+53, xoffset=220, RENDERER=1)
 
       WIDGET_CONTROL, logo_draw_catch_conf, GET_VALUE=logoID_catch_conf
       WSET, logoID_catch_conf
@@ -469,7 +485,7 @@ PRO main_menu_event, ev                                          ; event handler
            dmin_hmi:dmin_text_hmi,dmin_aia:dmin_text_aia,dmin_stereo:dmin_text_stereo,dmin_eit:dmin_text_eit,dmax_eit:dmax_text_eit,dmax_hmi:dmax_text_hmi,$
            dmax_stereo:dmax_text_stereo,dmax_aia:dmax_text_aia,savemap_euv:savmap1,savemap_mag:savmap2,saveeps_euv:saveps1,saveeps_mag:saveps2,saveeps_ft:saveps3,$
            savepng_euv:savpng1,savepng_mag:savpng2,savepng_ft:savpng3,mag_path:mag_path_text,save_path:save_path_text,euv_path:euv_path_text,dl_path:dl_path_text,$
-           grid_text:grid_text,thick_text:thick_text,config_main:config_main}
+           grid_text:grid_text,thick_text:thick_text,config_main:config_main,free:free}
 
       xmanager, 'config',config_main,  /no_block
     end
@@ -806,6 +822,7 @@ PRO config_event, ev                                          ; event handler
       if widget_info(cid.uncert,/button_set) eq 1 then new_paths.uncert ='on' else new_paths.uncert ='off'
       if widget_info(cid.lbc,/button_set) eq 1 then new_paths.lbc ='on' else new_paths.lbc ='off'
       if widget_info(cid.lock,/button_set) eq 1 then new_paths.lock ='on' else new_paths.lock ='off'
+      if widget_info(cid.free,/button_set) eq 1 then new_paths.free ='on' else new_paths.free ='off'
       
       write_ini_catch, dir+'config_CATCH.ini', new_paths,id.main, /struct_old  
       paths=new_paths
@@ -1029,13 +1046,23 @@ PRO read_ini_catch, filename, struct
     ini[28,1]='off'
     print,'% ERROR in .ini file encountered, default value subsituted.'
   endelse
-  
+
+  if valid_num(ini[29,1]) eq 0 then begin
+    if ini[29,1] ne 'on' and ini[29,1] ne 'off' then begin
+      ini[29,1]='on'
+      print,'% ERROR in .ini file encountered, default value subsituted.'
+    endif
+  endif else begin
+    ini[29,1]='off'
+    print,'% ERROR in .ini file encountered, default value subsituted.'
+  endelse
+    
   struct={config, euvpath:ini[0,1],magpath:ini[1,1],dlpath:ini[2,1],outpath:ini[3,1],smaps_euv:ini[4,1],smaps_mag:ini[5,1],$
     euv_eps:ini[6,1],mag_eps:ini[7,1],ft_eps:ini[8,1],euv_png:ini[9,1],mag_png:ini[10,1],ft_png:ini[11,1],$
     gridsize:fix(ini[12,1]),cthick:fix(ini[13,1]),aia_range:[long(ini[14,1]),long(ini[15,1])],$
     eit_range:[long(ini[16,1]),long(ini[17,1])],stereo_range:[long(ini[18,1]),long(ini[19,1])],$
     mdi_range:[long(ini[20,1]),long(ini[21,1])],hmi_range:[long(ini[22,1]),long(ini[23,1])],$
-    res_euv:fix(ini[24,1]),res_mag:fix(ini[25,1]),uncert:ini[26,1],lbc:ini[27,1],lock:ini[28,1]}
+    res_euv:fix(ini[24,1]),res_mag:fix(ini[25,1]),uncert:ini[26,1],lbc:ini[27,1],free:ini[28,1],lock:ini[29,1]}
 
 
 end
@@ -1115,6 +1142,7 @@ PRO write_ini_catch, filename, struct,parent_id, struct_old=struct_old, create_d
       if struct.res_mag ne paths.res_mag then outputvec=[outputvec,' MAG RESOLUTION: '+strtrim(string(paths.res_mag),2)+'  -->>  ' +strtrim(string(struct.res_mag),2)+' ']
       if struct.uncert ne paths.uncert then outputvec=[outputvec,' UNCERTAINTY CALCULATIONS: '+paths.uncert+'  -->>  ' +struct.uncert+' ']
       if struct.lbc ne paths.lbc then outputvec=[outputvec,' LBC: '+paths.lbc+'  -->>  ' +struct.lbc+' ']
+      if struct.free ne paths.free then outputvec=[outputvec,' Free: '+paths.free+'  -->>  ' +struct.free+' ']
       if struct.LOCK ne paths.lock then outputvec=[outputvec,' LOCK CONFIG: '+paths.lock+'  -->>  ' +struct.lock+' ']
       
       if n_elements(testvec) eq n_elements(outputvec) then begin
@@ -1189,6 +1217,8 @@ PRO write_ini_catch, filename, struct,parent_id, struct_old=struct_old, create_d
     printf,1,'uncertainty_calculation:'+'  '+struct.uncert
     printf,1,';#LBC default status (on/off)'
     printf,1,'lbc:'+'  '+struct.lbc
+    printf,1,';#Free Input (on/off)'
+    printf,1,'free:'+'  '+struct.free
     printf,1,';######'
     printf,1,';#############################
     printf,1,';### lock configuration file ###
@@ -1263,6 +1293,8 @@ PRO write_ini_catch, filename, struct,parent_id, struct_old=struct_old, create_d
     printf,1,'uncertainty_calculation:'+'  on'
     printf,1,';#LBC default status (on/off)'
     printf,1,'lbc:'+'  off'
+    printf,1,';#Free Input (on/off)'
+    printf,1,'free:'+'  off'
     printf,1,';######'
     printf,1,';#############################
     printf,1,';### lock configuration file ###

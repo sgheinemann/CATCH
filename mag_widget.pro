@@ -268,11 +268,19 @@ PRO mag_event, ev                                          ; event handler
       widget_control, ids.ld_path_bin, get_value=temp_path_bin
       binfil=file_search(temp_path_bin,lfiles_bin[val2])
       
+      plot_scl=make_array(5)
+      plot_scl[3]=paths.cthick
+      plot_scl[2]=paths.gridsize
+      plot_scl[4]=0     
+      
+      if paths.free eq 'on' then goto, freeinput
+      
       fits_info, magfil, /silent, n_ext=mag_ext
       if mag_ext eq 0 then magdex=headfits(magfil,errmsg=errmag,/silent) else magdex=headfits(magfil, /ex,errmsg=errmag,/silent)
       
       fits_info, binfil, /silent, n_ext=bin_ext
       if bin_ext eq 0 then bindex=headfits(binfil,errmsg=errbin,/silent) else bindex=headfits(binfil, /ex,errmsg=errbin,/silent)      
+      
       
       ;mreadfits, magfil, magdex
       ;mreadfits, binfil, bindex
@@ -287,14 +295,11 @@ PRO mag_event, ev                                          ; event handler
       res=dialog_message( 'Magnetogram time to different from binary CH map!', dialog_parent=ids.mag_main) & return
       endif
       
-      plot_scl=make_array(5)
-      plot_scl[3]=paths.cthick
-      plot_scl[2]=paths.gridsize
-      plot_scl[4]=0
+
       ;#magfile
       if strmatch(sxpar(magdex, 'instrume'), '*MDI*',/fold_case) eq 1 then begin      
         rd_mdi, magfil, mindex, mdata
-        index2map, mindex, mdata, imagmap
+        index2map, mindex, FLOAT(mdata), imagmap
         magdex=mindex
         mapid='MDI'
         plot_scl[0]=paths.mdi_range[0] & plot_scl[1]=paths.mdi_range[1]
@@ -304,7 +309,7 @@ PRO mag_event, ev                                          ; event handler
       if strmatch(sxpar(magdex, 'instrume'), '*HMI*',/fold_case) eq 1 then begin
         read_sdo, magfil, iheader, idata, /uncomp_del
         hmi_prep, iheader, idata, header, data;, /use_ref
-        index2map, header, data, imagmap
+        index2map, header, float(data), imagmap
         magdex=header
         mapid='HMI'
         plot_scl[0]=paths.hmi_range[0] & plot_scl[1]=paths.hmi_range[1] 
@@ -312,8 +317,19 @@ PRO mag_event, ev                                          ; event handler
       endif
       endelse
 
+      if 1 eq 2 then begin
+        freeinput:
+        mreadfits, magfil, index, data
+        index2map, index, float(data), imagmap
+        magdex=index
+        mapid='HMI'
+        plot_scl[0]=paths.hmi_range[0] & plot_scl[1]=paths.hmi_range[1]
+        plot_scl[4]=2
+      endif
+      
         mreadfits, binfil, bindex, bindata
         index2map, bindex, bindata, binmap
+        
         
         if TAG_EXIST(bindex,'v_catch') eq 0 then begin
           res=dialog_message( $
@@ -351,13 +367,18 @@ PRO mag_event, ev                                          ; event handler
       endif
 
 
+
+      
       case reso of
-        '4096x4096':
+        '4096x4096': imagmap=rebin_map(imagmap, 4096,4096)
         '2048x2048': imagmap=rebin_map(imagmap, 2048,2048)
         '1024x1024': imagmap=rebin_map(imagmap, 1024,1024)
         '512x512'  : imagmap=rebin_map(imagmap, 512,512)
         '256x256'  : imagmap=rebin_map(imagmap, 256,256)
       endcase
+      
+
+      
       
       binnum=list()
       binnum.add, where(binmap.data gt 0.5 and binmap.data lt 1.5,/null)

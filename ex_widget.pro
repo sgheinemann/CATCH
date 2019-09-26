@@ -3,7 +3,7 @@ pro ex_widget, ev
 
   common general, id, paths,dir,debug
   common menu_id, menuid
-  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso
+  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso 
   common insitu, insi_ids, date_map, date_plasma, speed, density, temp, date_mag, btsc, bx,by,bz,ranges
   common dtool, boundary_exists, draw_binmap,dcord2,xcord2,ycord2,draw_dex,mousebutton 
   
@@ -46,13 +46,14 @@ pro ex_widget, ev
   
   load=widget_button(data_field,value='Load', uval='load',/NO_release, xoffset=318, yoffset=230,xsize=100,ysize=25,tooltip='Load selected file')
   if paths.lbc eq 'on' then begin
-  lbc=widget_button(data_field,value='LBC on', uval='lbc',/NO_release, xoffset=10, yoffset=230,xsize=100,ysize=25,tooltip='Turn Limb Brightening Correction on/off')  
+  lbc=widget_button(data_field,value='LBC on', uval='lbc',/NO_release, xoffset=100, yoffset=230,xsize=80,ysize=25,tooltip='Limb Brightening Correction (on/off)')  
   endif else begin
-  lbc=widget_button(data_field,value='LBC off', uval='lbc',/NO_release, xoffset=10, yoffset=230,xsize=100,ysize=25,tooltip='Turn Limb Brightening Correction on/off')
+  lbc=widget_button(data_field,value='LBC off', uval='lbc',/NO_release, xoffset=100, yoffset=230,xsize=80,ysize=25,tooltip='Limb Brightening Correction (on/off)')
   endelse
+  psf=widget_button(data_field,value='PSF off', uval='psf',/NO_release, xoffset=10, yoffset=230,xsize=80,ysize=25,tooltip='Use PSF devonvolution on AIA images (on/off)')
   
   
-  label_reso = WIDGET_LABEL(data_field, XSIZE=70, VALUE='Resolution', yoffset=235, xoffset=130, /align_left)
+  label_reso = WIDGET_LABEL(data_field, XSIZE=70, VALUE='Resolution', yoffset=210, xoffset=215, /align_left)
   cbox_reso=widget_combobox(data_field,value=['4096x4096','2048x2048','1024x1024','512x512','256x256'], uval='cbox_reso', xsize= 100, yoffset=230, xoffset=200,ysize=25)  
   case paths.res_euv of
     256:COMBOBOX_def=0
@@ -198,8 +199,8 @@ pro ex_widget, ev
          ex_main:ex_main,lbc:lbc,cbox_reso:cbox_reso, files_list:files_list,drawID:drawID, draw_histID:draw_histID, ld_path:ld_path_text,thick_text:long(0),$
          sv_path:sv_path_text, opt_main:long(0),dmin_text:long(0), grid_text:long(0),dmax_text:long(0), apply_opt:long(0),abort_opt:long(0), popt:popt,$
          draw_main:long(0), apply_draw:long(0), abort_draw:long(0), draw_big:long(0), draw_radius:long(0), popt_draw:long(0), new_draw:long(0), draw_morph:long(0),$
-         draw_morph_activ:long(0), draw_erase:long(0),draw_bigID:long(0),vlabel_category:vlabel_category , vlabel_mean:vlabel_mean}
-        
+         draw_morph_activ:long(0), draw_erase:long(0),draw_bigID:long(0),vlabel_category:vlabel_category , vlabel_mean:vlabel_mean, psf:psf}
+
        
   xmanager, 'ex',ex_main,  /no_block
  
@@ -210,7 +211,7 @@ end
 PRO ex_event, ev                                          ; event handler
   common general, id, paths,dir,debug
   common menu_id, menuid
-  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso
+  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso 
   common insitu, insi_ids, date_map, date_plasma, speed, density, temp, date_mag, btsc, bx,by,bz,ranges
   common version, version
   common dtool, boundary_exists, draw_binmap,dcord2,xcord2,ycord2,draw_dex,mousebutton
@@ -436,7 +437,7 @@ PRO ex_event, ev                                          ; event handler
       WIDGET_CONTROL, ids.vlabel_exlat_err, SET_VALUE=strtrim(STRING(ch_prop[6,9], format='(F15.2)'),2)+' | '+strtrim(STRING(ch_prop[6,10], format='(F15.2)'),2)
       
       
-      A=[15.82  ,   0.10  ,  -6.02]
+       A=[3.31  ,   0.53  ,  4.71]
       category_factor=(ch_prop[6,0]/ch_prop[5.0])*100/(A[0]*(ch_prop[5,0]/1e10)^(-1*A[1])+A[2])
        
       WIDGET_CONTROL, ids.vlabel_category, SET_VALUE=strtrim(STRING(category_factor, format='(F15.2)'),2)     
@@ -490,6 +491,7 @@ PRO ex_event, ev                                          ; event handler
     'sv_text':
     'cbox_reso':
     'lbc':begin &  widget_control, ev.id, get_value=value   & if value eq 'LBC off' then widget_control, ev.id, set_value='LBC on' else widget_control, ev.id, set_value='LBC off' &  end
+    'psf':begin &  widget_control, ev.id, get_value=value   & if value eq 'PSF off' then widget_control, ev.id, set_value='PSF on' else widget_control, ev.id, set_value='PSF off' &  end
     'refresh': begin
       widget_control,/hourglass
       widget_control, ids.ld_path, get_value=temp_path
@@ -516,7 +518,10 @@ PRO ex_event, ev                                          ; event handler
      if val eq -1 then begin & res=dialog_message( 'No file selected!', dialog_parent=ids.ex_main) & return & endif
      widget_control, ids.ld_path, get_value=temp_path
      fil=temp_path+lfiles[val]
-     ;print, fil
+    
+     if paths.free eq 'on' then goto, freeinput
+      
+      
      ;#Savefile
      if strmatch(fil, '*.sav',/fold_case) eq 1 then goto, savefile
      
@@ -529,8 +534,20 @@ PRO ex_event, ev                                          ; event handler
       if strmatch(sxpar(index, 'origin'),'*SDO*') ne 1 then  begin & res=dialog_message( 'No usable file selected!', dialog_parent=ids.ex_main) & return & endif
       if sxpar(index, 'WAVELNTH') ne 193 then  begin & res=dialog_message( 'No usable file selected!', dialog_parent=ids.ex_main) & return & endif
       read_sdo, fil, header_help, data_help,/uncomp_del,/quiet
+      
+      widget_control, ids.psf, get_value=psf_val
+      if psf_val eq 'PSF on' then begin
+      exis=file_test(dir+'psf193.sav')
+        if exis eq 0 then begin
+          psf=aia_calc_psf('193')
+          save, psf, filename=dir+'psf193.sav'
+        endif else restore, dir+'psf193.sav'
+      index2map, header_help, float(data_help), themap 
+      endif else begin   
       aia_prep, header_help, data_help, header,data, /norm,/quiet
-      index2map, header, float(data), themap
+      index2map, header, float(data), themap  
+      endelse
+      
       map_identifyer='SDO'
      endif
      
@@ -583,13 +600,35 @@ PRO ex_event, ev                                          ; event handler
         endif
       endif
       
+      
+      if 1 eq 2 then begin
+      freeinput:
+        mreadfits,fil, index, data
+        index2map, index, float(data), themap
+        map_identfyer='SDO'
+
+      endif
+      
       case reso of
-        '4096x4096': 
+        '4096x4096': themap=rebin_map(themap, 4096,4096)
         '2048x2048': themap=rebin_map(themap, 2048,2048)
         '1024x1024': themap=rebin_map(themap, 1024,1024)
         '512x512'  : themap=rebin_map(themap, 512,512)
         '256x256'  : themap=rebin_map(themap, 256,256)
       endcase
+      
+      if map_identifyer eq 'SDO' then begin
+        widget_control, ids.psf, get_value=psf_val
+        if psf_val eq 'PSF on' then begin
+        tmp = rem_tag(header_help, 'date_d$obs')
+          map2index, themap, tmp, data2
+          psf_rb=frebin(psf,n_elements(data2[*,0]),n_elements(data2[0,*]),/total) 
+          aia_decon_data = aia_deconvolve_richardsonlucy(float(data2), psf_rb, error = error)
+          aia_prep, tmp,  aia_decon_data, header,data, /norm,/quiet,/use_ref
+          index2map, header, float(data), themap
+        endif
+      endif
+            
       
       widget_control, ids.lbc, get_value=lbc_val
       if  lbc_val eq 'LBC on' then begin workmap=themap & workmap=annulus_limb_correction(workmap) & endif else workmap=themap
@@ -606,6 +645,7 @@ PRO ex_event, ev                                          ; event handler
       if des ne 'CATCH:EUV' then begin &  res=dialog_message( 'No CATCH save file selected!', dialog_parent=ids.ex_main) & return & endif
       ;if res[0] eq 'themap' and res[1] eq 'workmap' then begin & restore, fil & endif else begin &  res=dialog_message( 'No CATCH save file selected!', /center) & return & endelse
      endif 
+     
       
       widget_control, ids.activate,sensitive=1
       widget_control, ids.morph,sensitive=1
@@ -647,7 +687,7 @@ PRO ex_event, ev                                          ; event handler
       
       WSET, ids.draw_histID
         sd_ind=median(workmap.data)
-        h=histogram(workmap.data, locations=bin, binsize=5)
+        h=histogram(workmap.data, locations=bin, binsize=5, /nan)
         if min(h[where(bin lt 250,/null)],/nan)*0.8 gt 1 then ymin=min(h[where(bin lt 250,/null)],/nan)*0.8 else ymin=1
       plot, bin, h, xtit='Intensity', /ylog, title=' ', position=[0.01,0.16,0.87,0.95],  Color=cgColor('black'), Background=cgColor('white'), $;psym=10,
         xstyle=9, ystyle=9,charsize=0.9, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, xrange=[0,250], yrange=[ymin,max(h,/nan)*1.2],$
@@ -703,11 +743,12 @@ PRO ex_event, ev                                          ; event handler
         
       sd_ind=median(workmap.data)
       bmap=workmap & bmap.data[*]=0 & bmaps=replicate(bmap, 5) ;& bmap2=workmap & bmap2.data[*]=0 & bmap3=workmap & bmap3.data[*]=0
-      bmaps[0].data[where(workmap.data lt ((thr_value-2)/1e2*sd_ind))]=1
-      bmaps[1].data[where(workmap.data lt ((thr_value-1)/1e2*sd_ind))]=1
-      bmaps[2].data[where(workmap.data lt ((thr_value)/1e2*sd_ind))]=1
-      bmaps[3].data[where(workmap.data lt ((thr_value+1)/1e2*sd_ind))]=1
-      bmaps[4].data[where(workmap.data lt ((thr_value+2)/1e2*sd_ind))]=1
+      thresh_val=(thr_value)/1e2*sd_ind
+      bmaps[0].data[where(workmap.data lt (thresh_val-2))]=1
+      bmaps[1].data[where(workmap.data lt (thresh_val-1))]=1
+      bmaps[2].data[where(workmap.data lt (thresh_val))]=1
+      bmaps[3].data[where(workmap.data lt (thresh_val+1))]=1
+      bmaps[4].data[where(workmap.data lt (thresh_val+2))]=1
       
       if morph_value ne 0 then  begin
       dist_circle, circ_struct, 30
@@ -767,7 +808,7 @@ PRO ex_event, ev                                          ; event handler
     'thresh':begin
       WSET, ids.draw_histID
       sd_ind=median(workmap.data)
-      h=histogram(workmap.data, locations=bin, binsize=5)
+      h=histogram(workmap.data, locations=bin, binsize=5,/nan)
       if min(h[where(bin lt 250,/null)],/nan)*0.8 gt 1 then ymin=min(h[where(bin lt 250,/null)],/nan)*0.8 else ymin=1
       plot, bin, h, xtit='Intensity', /ylog, title=' ', position=[0.01,0.16,0.87,0.95],  Color=cgColor('black'), Background=cgColor('white'), $;psym=10,
         xstyle=9, ystyle=9,charsize=0.9, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, xrange=[0,250], yrange=[ymin,max(h,/nan)*1.2],$
@@ -1544,7 +1585,7 @@ PRO insi_event, ev                                          ; event handler
   common general, id, paths,dir,debug
   common menu_id, menuid
   common insitu, insi_ids, date_map, date_plasma, speed, density, temp, date_mag, btsc, bx,by,bz,ranges
-  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso
+  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso 
   
   widget_control, ev.id, get_uvalue=uvalue
 
@@ -2003,7 +2044,7 @@ end
 PRO opt_event, ev                                          ; event handler
   common general, id, paths,dir,debug
   common menu_id, menuid
-  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso
+  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso 
   common dtool, boundary_exists, draw_binmap,dcord2,xcord2,ycord2,draw_dex,mousebutton
 
   widget_control, ev.id, get_uvalue=uvalue
@@ -2145,7 +2186,7 @@ end
 PRO drawi_event, ev                                          ; event handler
   common general, id, paths,dir,debug
   common menu_id, menuid
-  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso
+  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso 
   common dtool, boundary_exists, draw_binmap,dcord2,xcord2,ycord2,draw_dex,mousebutton
 
   widget_control, ev.id, get_uvalue=uvalue
@@ -2428,7 +2469,7 @@ common version, version
 close,/all
 openw,1,path
   
- A=[15.82  ,   0.10  ,  -6.02]
+ A=[3.31  ,   0.53  ,  4.71]
 cf=(in[6,0]/in[5.0])*100/(A[0]*(in[5,0]/1e10)^(-1*A[1])+A[2])
 
 if finite(cf) eq 0 then cf=9999
@@ -2479,7 +2520,7 @@ end
 PRO FIELD_INT, Ch,  Event, Altered, Text_ID
   common general, id, paths,dir,debug
   common menu_id, menuid
-  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso
+  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso 
   ;COMPILE_OPT hidden
 
   Altered = 0     ; nothing so far
