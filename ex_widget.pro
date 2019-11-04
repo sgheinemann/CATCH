@@ -577,7 +577,14 @@ PRO ex_event, ev                                          ; event handler
      map_identifyer='SOHO'
      endif
      
-
+      
+      
+      if 1 eq 2 then begin
+      freeinput:
+        mreadfits,fil, index, data
+        index2map, index, float(data), themap
+        map_identifyer='SDO'
+      endif
       
       reso=WIDGET_info(ids.cbox_reso, /combobox_gettext)
       if map_identifyer  eq 'SOHO'then begin 
@@ -599,16 +606,8 @@ PRO ex_event, ev                                          ; event handler
           if res eq 'No' then return
         endif
       endif
-      
-      
-      if 1 eq 2 then begin
-      freeinput:
-        mreadfits,fil, index, data
-        index2map, index, float(data), themap
-        map_identfyer='SDO'
 
-      endif
-      
+    
       case reso of
         '4096x4096': themap=rebin_map(themap, 4096,4096)
         '2048x2048': themap=rebin_map(themap, 2048,2048)
@@ -616,7 +615,7 @@ PRO ex_event, ev                                          ; event handler
         '512x512'  : themap=rebin_map(themap, 512,512)
         '256x256'  : themap=rebin_map(themap, 256,256)
       endcase
-      
+   
       if map_identifyer eq 'SDO' then begin
         widget_control, ids.psf, get_value=psf_val
         if psf_val eq 'PSF on' then begin
@@ -645,8 +644,7 @@ PRO ex_event, ev                                          ; event handler
       if des ne 'CATCH:EUV' then begin &  res=dialog_message( 'No CATCH save file selected!', dialog_parent=ids.ex_main) & return & endif
       ;if res[0] eq 'themap' and res[1] eq 'workmap' then begin & restore, fil & endif else begin &  res=dialog_message( 'No CATCH save file selected!', /center) & return & endelse
      endif 
-     
-      
+
       widget_control, ids.activate,sensitive=1
       widget_control, ids.morph,sensitive=1
       widget_control, ids.thresh,sensitive=1
@@ -684,7 +682,7 @@ PRO ex_event, ev                                          ; event handler
       plot_map, pmap, xrange=[-1100,1100],yrange=[-1100,1100],dmin=plot_scl[0],dmax=plot_scl[1], title=strmid(ixixdate,0,16),window=!D.Window,  xstyle=5, ystyle=5, position=[0,0,1,1],log=logval, grid_spacing=plot_scl[3] 
       xyouts, -1070,-1070,strmid(ixixdate,0,16), color=cgcolor('white'), charsize=1.5, charthick=1.5
       dcord=!D & xcord=!X & ycord=!Y
-      
+
       WSET, ids.draw_histID
         sd_ind=median(workmap.data)
         h=histogram(workmap.data, locations=bin, binsize=5, /nan)

@@ -107,7 +107,11 @@
 ;                     -Added the option to use point spread function (PSF) deconvolution on 193 AIA/SDO filtergrams before extraction
 ;		                  -Added the option tu use abitrary full-disk filtergrams and magnetograms as input (header must be SDO like, use at your own risk).
 ;             -Minor Changes
-;                     -Various Bugfixing                                                                                                          
+;                     -Various Bugfixing
+;
+;        November 2019: (v1.03):
+;             -Minor Changes
+;                     -Various Bugfixing for manual filtergram input (tested for AIA, SWAP, XRT full disk images)                                                                                                          
 ;*******************************************************************************************
 ;-
 ;
@@ -168,7 +172,7 @@ pro catch_main
   common general, id, paths,dir,debug
   common menu_id, menuid
   common version, version
-  version='v1.02'
+  version='v1.03'
 
   debug =0   ; debug mode if set to 1
   
