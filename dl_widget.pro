@@ -176,7 +176,7 @@ PRO download_event, ev                                          ; event handler
         widget_control, ids.dl_path, get_value=temp_path
         if temp_path ne paths.dlpath then begin & changes+=1 & new_paths.dlpath=temp_path & endif
           if changes gt 0 then begin
-          write_ini_catch, dir+'config_CATCH.ini', new_paths,ids.dl_main, /struct_old
+          write_ini_catch, getenv('HOME')+'/.config_CATCH.ini', new_paths,ids.dl_main, /struct_old
           paths=new_paths
         endif
       ENDIF
@@ -190,7 +190,7 @@ PRO download_event, ev                                          ; event handler
         widget_control, ids.dl_path, get_value=temp_path
         if temp_path ne paths.dlpath then begin & changes+=1 & new_paths.dlpath=temp_path & endif
           if changes gt 0 then begin
-          write_ini_catch, dir+'config_CATCH.ini', new_paths,ids.dl_main, /struct_old
+          write_ini_catch, getenv('HOME')+'/.config_CATCH.ini', new_paths,ids.dl_main, /struct_old
           paths=new_paths
         endif
       ENDIF
