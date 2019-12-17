@@ -1115,8 +1115,8 @@ endif
       endif
 
       if changes gt 0 then begin
-        write_ini_catch, dir+'/config_CATCH.ini', new_paths,ids.mag_main, /struct_old
-        if  systim(/sec)-file_modtime(dir+'/config_CATCH.ini') lt 10 then  paths=new_paths
+        write_ini_catch, getenv('HOME')+'/.config_CATCH.ini', new_paths,ids.mag_main, /struct_old
+        if  systim(/sec)-file_modtime(getenv('HOME')+'/.config_CATCH.ini') lt 10 then  paths=new_paths
       endif
 
     ENDIF
@@ -1157,8 +1157,8 @@ endif
       endif
 
       if changes gt 0 then begin
-        write_ini_catch, dir+'/config_CATCH.ini', new_paths,ids.mag_main, /struct_old
-        if  systim(/sec)-file_modtime(dir+'/config_CATCH.ini') lt 10 then  paths=new_paths
+        write_ini_catch, getenv('HOME')+'/.config_CATCH.ini', new_paths,ids.mag_main, /struct_old
+        if  systim(/sec)-file_modtime(getenv('HOME')+'/.config_CATCH.ini') lt 10 then  paths=new_paths
       endif
 
     ENDIF

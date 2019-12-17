@@ -539,8 +539,13 @@ PRO ex_event, ev                                          ; event handler
       if psf_val eq 'PSF on' then begin
       exis=file_test(dir+'psf193.sav')
         if exis eq 0 then begin
+          exis_home=file_test(getenv('HOME')+'/psf193.sav')
+          if exis_home eq 1 then begin
+            restore, getenv('HOME')+'/psf193.sav'
+          endif else begin
           psf=aia_calc_psf('193')
-          save, psf, filename=dir+'psf193.sav'
+          save, psf, getenv('HOME')+'/psf193.sav'
+          endelse
         endif else restore, dir+'psf193.sav'
       index2map, header_help, float(data_help), themap 
       endif else begin   
@@ -826,331 +831,331 @@ PRO ex_event, ev                                          ; event handler
     'morph' :
     'draw':
     'insitu': begin
-      widget_control,/hourglass
-      widget_control, ids.ex_main, TLB_GET_OFFSET=offs
-
-      insi_main = widget_base(title='CATCH: In-Situ Data', xsize=560, ysize=735,SCR_XSIZE=560,SCR_YSIZE=735,modal=(1-debug), group_leader=ids.ex_main, xoffset=offs[0]+220, yoffset=offs[1]-20)
-
-      top_insi = Widget_Base(insi_main, XOFFSET=10)
-      label = Widget_Label(top_insi, value='In-Situ Data', XOFFSET=10)
-      labelGeometry = Widget_Info(label, /GEOMETRY)
-      labelYSize =  labelGeometry.ysize
-      insi = Widget_Base(top_insi, /FRAME, YOFFSET=labelYSize/2, YPAD=10, XPAD=10,ysize=715,xsize=540)
-      label = Widget_Label(top_insi, value='In-Situ Data', XOFFSET=10)
-
-      min_date=anytim(anytim(date_map)-24.*3600.*5.,/ccsds) & max_date=anytim(anytim(date_map)+24.*3600.*20.,/ccsds)
-      
-      if map_identifyer eq 'STEREO' then begin
-        if strmatch(workmap.id,'*STEREO_A*', /fold_case) eq 1 then begin & obs= map_identifyer+'_A' & sat='STA' & endif
-        if strmatch(workmap.id,'*STEREO_B*', /fold_case) eq 1 then begin & obs= map_identifyer+'_B' & sat='STB' & endif
-        
-      ;res=dialog_message('Stereo In-Situ data not yet available!', dialog_parent=ids.ex_main)
-      ;return
-        
-        
-        
-        file_unzip, dir+'stereo_insitu_data.zip',files=flist
-        
-        yr=strmid(min_date, 0,4)
-        match1=strmatch(flist,'*'+sat+'*PLASTIC*'+yr+'*', /fold_case)
-        match2=strmatch(flist,'*'+sat+'*MAG*'+yr+'*', /fold_case)
-        
-        l_index1=where(match1 eq 1,/null) 
-        if l_index1 ge 0 then begin
-        plasma_file=flist[l_index1]
-        endif else begin
-        res=dialog_message('No STEREO data available!', dialog_parent=ids.ex_main)
-            return
-          endelse
-          
-        l_index2=where(match2 eq 1,/null) & mag_file=flist[l_index2]
-        if l_index2 ge 0 then begin
-          mag_file=flist[l_index2]
-           endif else begin
-          res=dialog_message('No STEREO data available!', dialog_parent=ids.ex_main)
-          return
-        endelse
-        
-
-openr, lun, plasma_file, /get_lun
-line = list()  ;search for end of header (= 'DATA')
-line_tmp = ''
-n = 0
-while line_tmp ne 'DATA:' do begin
-  readf, lun, line_tmp
-  line.add, line_tmp
-  n++
-endwhile
-
-close,/all
-readcol, plasma_file, yr,mon,dy,hr,mn,sec,dummy,density, speed, temp,dummy,dummy,dummy,format='(I4.2,I4.3,I3.2,I3.2,I3.2,I3.2,I4.3,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5)', /silent,SKIPLINE=n
-density[where(density eq 1e34)]=!values.f_nan & speed[where(speed eq 1e34)]=!values.f_nan  &  temp[where(temp eq 1e34)]=!values.f_nan
-atim=anytim(string(yr,f='(I4.4)')+'-'+string(mon,f='(I2.2)')+'-'+string(dy,f='(I2.2)')+'T'+string(hr, f='(I2.2)')+':'+string(mn,f='(I2.2)')+':'+string(sec,f='(I2.2)'))
-date_plasma=anytim(atim,/ccsds)
-
-
-openr, lun, mag_file, /get_lun
-line = list()  ;search for end of header (= 'DATA')
-line_tmp = ''
-n = 0
-while line_tmp ne 'DATA:' do begin
-  readf, lun, line_tmp
-  line.add, line_tmp
-  n++
-endwhile
-
-close,/all
-readcol, mag_file, yr,mon,dy,hr,mn,sec,dummy,br,bt,bn,btsc,dummy,dummy,dummy,dummy,format='(I4.2,I4.3,I3.2,I3.2,I3.2,I3.2,I4.3,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5)', /silent,SKIPLINE=n
-br[where(br eq 1e34)]=!values.f_nan & bt[where(bt eq 1e34)]=!values.f_nan & bn[where(bn eq 1e34)]=!values.f_nan & btsc[where(btsc eq 1e34)]=!values.f_nan &
-atim=anytim(string(yr,f='(I4.4)')+'-'+string(mon,f='(I2.2)')+'-'+string(dy,f='(I2.2)')+'T'+string(hr, f='(I2.2)')+':'+string(mn,f='(I2.2)')+':'+string(sec,f='(I2.2)'))
-date_mag=anytim(atim,/ccsds)
-
-bx=br & by=bt & bz=bn
-
-         
-
-        if strmid(min_date,0,4) ne strmid(max_date,0,4) then begin
-          
-          backup_d=density
-          backup_s=speed
-          backup_t=temp
-          backup_btsc=btsc
-          backup_bx=bx
-          backup_by=by
-          backup_bz=bz
-          backup_dm=date_mag
-          backup_dp=date_plasma
-         
-       
-          yr=strmid(max_date, 0,4)
-          match1=strmatch(flist,'*'+sat+'*PLASTIC*'+yr+'*', /fold_case)
-          match2=strmatch(flist,'*'+sat+'*MAG*'+yr+'*', /fold_case)
-
-          l_index1=where(match1 eq 1)
-          if l_index1 ge 0 then begin
-            plasma_file=flist[l_index1]
-          endif else begin
-            res=dialog_message('No STEREO data available!', dialog_parent=ids.ex_main)
-            return
-          endelse
-
-          l_index2=where(match2 eq 1) & mag_file=flist[l_index2]
-          if l_index2 ge 0 then begin
-            mag_file=flist[l_index2]
-          endif else begin
-            res=dialog_message('No STEREO data available!', dialog_parent=ids.ex_main)
-            return
-          endelse
-
-
-          openr, lun, plasma_file, /get_lun
-          line = list()  ;search for end of header (= 'DATA')
-          line_tmp = ''
-          n = 0
-          while line_tmp ne 'DATA:' do begin
-            readf, lun, line_tmp
-            line.add, line_tmp
-            n++
-          endwhile
-
-          close,/all
-          readcol, plasma_file, yr,mon,dy,hr,mn,sec,dummy,density, speed, temp,dummy,dummy,dummy,format='(I4.2,I4.3,I3.2,I3.2,I3.2,I3.2,I4.3,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5)', /silent,SKIPLINE=n
-          density[where(density eq 1e34)]=!values.f_nan & speed[where(speed eq 1e34)]=!values.f_nan  &  temp[where(temp eq 1e34)]=!values.f_nan
-          atim=anytim(string(yr,f='(I4.4)')+'-'+string(mon,f='(I2.2)')+'-'+string(dy,f='(I2.2)')+'T'+string(hr, f='(I2.2)')+':'+string(mn,f='(I2.2)')+':'+string(sec,f='(I2.2)'))
-          date_plasma=anytim(atim,/ccsds)
-          
-
-          openr, lun, mag_file, /get_lun
-          line = list()  ;search for end of header (= 'DATA')
-          line_tmp = ''
-          n = 0
-          while line_tmp ne 'DATA:' do begin
-            readf, lun, line_tmp
-            line.add, line_tmp
-            n++
-          endwhile
-
-          close,/all
-          readcol, mag_file, yr,mon,dy,hr,mn,sec,dummy,br,bt,bn,btsc,dummy,dummy,dummy,dummy,format='(I4.2,I4.3,I3.2,I3.2,I3.2,I3.2,I4.3,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5)', /silent,SKIPLINE=n
-          br[where(br eq 1e34)]=!values.f_nan & bt[where(bt eq 1e34)]=!values.f_nan & bn[where(bn eq 1e34)]=!values.f_nan & btsc[where(btsc eq 1e34)]=!values.f_nan &
-          atim=anytim(string(yr,f='(I4.4)')+'-'+string(mon,f='(I2.2)')+'-'+string(dy,f='(I2.2)')+'T'+string(hr, f='(I2.2)')+':'+string(mn,f='(I2.2)')+':'+string(sec,f='(I2.2)'))
-          date_mag=anytim(atim,/ccsds)
-
-          bx=br & by=bt & bz=bn
-        
-          date_plasma=[backup_dp, date_plasma]
-          date_mag=[backup_dm, date_mag]
-          speed=[backup_s, speed]
-          density=[backup_d, density]
-          temp=[backup_t, temp]
-          btsc=[backup_btsc, btsc]
-          bx=[backup_bx, bx]
-          by=[backup_by, by]
-          bz=[backup_bz, bz]
-        endif
-        
-        file_delete, flist,/quiet
-        
-        plasmadex=where(anytim(date_plasma) ge anytim(min_date) and anytim(date_plasma) le anytim(max_date))
-        magdex=where(anytim(date_mag) ge anytim(min_date) and anytim(date_mag) le anytim(max_date))
-        
-        date_plasma=date_plasma[plasmadex]
-        date_mag=date_mag[magdex]
-        speed=speed[plasmadex]
-        density=density[plasmadex]
-        temp=temp[plasmadex]
-        btsc=btsc[magdex]
-        bx=bx[magdex]
-        by=by[magdex]
-        bz=bz[magdex]
-
-      endif else begin
-      swepamdata=get_acedata(min_date,max_date,/swepam,/monthly)
-     
-      speed=swepamdata.b_speed & fill_missing,speed,-9999.90,1
-      density=swepamdata.p_density & fill_missing,density,-9999.90,1
-      temp=swepamdata.ion_temp & fill_missing,temp,-100000,1
-      magdata=get_acedata(min_date,max_date,/mag,/monthly)
-      
-      btsc=magdata.bt
-      bx=magdata.bx
-      by=magdata.by
-      bz=magdata.bz
-
-      date_plasma=anytim(mjd2any(swepamdata.mjd)+swepamdata.time/1000.,/ccsds)
-      date_mag=anytim(mjd2any(magdata.mjd)+magdata.time/1000.,/ccsds)
-      endelse
-      
-      stim=strmid(date_map,0,19)
-      etim=strmid(anytim(anytim(date_map)+24.*3600.*10.,/ccsds),0,19)
-      
-      ranges=[min(speed,/nan)*0.9, ceil(max(speed,/nan)*1.1), min(density,/nan)*0.9, ceil(max(density,/nan)*1.1), $
-            min(temp/1e5,/nan)*0.9, ceil(max(temp/1e5,/nan)*1.1), min(btsc,/nan)*0.9, ceil(max(btsc,/nan)*1.1), $
-            min([bx,by,bz],/nan)*1.1, ceil(max([bx,by,bz],/nan)*1.1)]
-      ranges=(ranges)
-      
-      start_time=widget_slider(insi,/SUPPRESS_VALUE, uval='s_time', min=0, max=480, value=120., xsize=255, xoffset=10, yoffset=10,/align_center )
-      end_time=widget_slider(insi,/SUPPRESS_VALUE, uval='e_time', min=0, max=480, value=240., xsize=255, xoffset=275, yoffset=10,/align_center )
-
-      start_time_label1 = WIDGET_LABEL(insi, XSIZE=90, VALUE='Start Time:', xoffset=10, yoffset=30,/align_left)
-      start_time_label2 = WIDGET_LABEL(insi, XSIZE=160, VALUE=stim, xoffset=100, yoffset=30)
-      end_time_label1 = WIDGET_LABEL(insi, XSIZE=90, VALUE='End Time:', xoffset=275, yoffset=30,/align_left)
-      end_time_label2 = WIDGET_LABEL(insi, XSIZE=160, VALUE=etim, xoffset=365, yoffset=30)
-      
-      help_x=50.
-      help_x2=help_x-10.
-      
-      lab1 = WIDGET_LABEL(insi, XSIZE=75, VALUE='v [km/s]', xoffset=0, yoffset=help_x2+65,/align_center)
-      lab2 = WIDGET_LABEL(insi, XSIZE=75, VALUE='n [1/cm^3]', xoffset=0, yoffset=help_x2+170,/align_center)
-      lab3 = WIDGET_LABEL(insi, XSIZE=75, VALUE='T [10^5 K]', xoffset=0, yoffset=help_x2+275,/align_center)
-      lab4 = WIDGET_LABEL(insi, XSIZE=75, VALUE='B [nT]', xoffset=0, yoffset=help_x2+380,/align_center)
-      lab5 = WIDGET_LABEL(insi, XSIZE=75, VALUE='Bi [nT]', xoffset=0, yoffset=help_x2+485,/align_center)
-     
-      draw_insitu1 = widget_draw(insi, uvalue='draw_1', xsize=455, ysize=100, xoffset=75, yoffset=help_x+10,/frame)
-      draw_insitu2 = widget_draw(insi, uvalue='draw_2', xsize=455, ysize=100, xoffset=75, yoffset=help_x+115,/frame)
-      draw_insitu3 = widget_draw(insi, uvalue='draw_3', xsize=455, ysize=100, xoffset=75, yoffset=help_x+220,/frame)
-      draw_insitu4 = widget_draw(insi, uvalue='draw_4', xsize=455, ysize=100, xoffset=75, yoffset=help_x+325,/frame)
-      draw_insitu5 = widget_draw(insi, uvalue='draw_5', xsize=455, ysize=100, xoffset=75, yoffset=help_x+430,/frame)
-      draw_insitu6 = widget_draw(insi, uvalue='draw_5', xsize=455, ysize=50, xoffset=75, yoffset=help_x+535,/frame)
-      mark_slider=widget_slider(insi,/SUPPRESS_VALUE, uval='mark', min=0, max=1000, value=400., xsize=465, xoffset=70, yoffset=help_x+600,/align_center )
-      
-      ;abort_insi= widget_button(insi,value='Done', uval='abort_insi',/NO_release, xsize=150. , xoffset=400., yoffset=help_x+610, tooltip='Close in-situ window',ysize=25)
-      
-      lab_curr = WIDGET_LABEL(insi, XSIZE=130, VALUE='Time at guideline:', xoffset=10, yoffset=help_x+635,/align_left)
-      
-      lab_current = WIDGET_LABEL(insi, XSIZE=180, VALUE=' ', xoffset=130, yoffset=help_x+635,/align_center)
-      
-      save_insi= widget_button(insi,value='Save Image', uval='save_insi',/NO_release, xsize=100. , xoffset=320., yoffset=help_x+630, tooltip='Save image to output directory',ysize=25)
-      abort_insi= widget_button(insi,value='Done', uval='abort_insi',/NO_release, xsize=100. , xoffset=430., yoffset=help_x+630, tooltip='Close in-situ window',ysize=25)
-
-      widget_control, draw_insitu1,sensitive=0
-      widget_control, draw_insitu2,sensitive=0 
-      widget_control, draw_insitu3,sensitive=0 
-      widget_control, draw_insitu4,sensitive=0 
-      widget_control, draw_insitu5,sensitive=0 
-      widget_control, draw_insitu6,sensitive=0
-      ;widget_control, save_insi, sensitive=0  
-
-
-      widget_control, insi_main, /realize
-      
-      
-      WIDGET_CONTROL, draw_insitu1, GET_VALUE=draw_insitu1ID
-      WIDGET_CONTROL, draw_insitu2, GET_VALUE=draw_insitu2ID
-      WIDGET_CONTROL, draw_insitu3, GET_VALUE=draw_insitu3ID
-      WIDGET_CONTROL, draw_insitu4, GET_VALUE=draw_insitu4ID
-      WIDGET_CONTROL, draw_insitu5, GET_VALUE=draw_insitu5ID
-      WIDGET_CONTROL, draw_insitu6, GET_VALUE=draw_insitu6ID
-      
-            insi_ids={draw_insitu1ID:draw_insitu1ID,draw_insitu2ID:draw_insitu2ID,draw_insitu3ID:draw_insitu3ID,$
-                draw_insitu4ID:draw_insitu4ID,draw_insitu5ID:draw_insitu5ID,draw_insitu6ID:draw_insitu6ID, lab_current:lab_current,$
-                start_time:start_time_label2,end_time:end_time_label2, abort_insi:abort_insi, save_insi:save_insi,$
-                mark_slider:mark_slider, start_time_slider:start_time, end_time_slider:end_time,insi_main:insi_main }
-                
-      widget_control, insi_ids.mark_slider, get_value=slider_val  &   tr=(anytim(etim)-anytim(stim)) & lineval=anytim(anytim(stim)+(tr*float(slider_val))/1e3,/ccsds)
-      widget_control, insi_ids.start_time, get_value=stim
-      widget_control, insi_ids.end_time, get_value=etim
-      widget_control, insi_ids.lab_current, set_value=strmid(lineval,0,19)
-      
-WSET, insi_ids.draw_insitu1ID
-      !p.color=cgcolor('black')
-      utplot, date_plasma, speed, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[0],ranges[1]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[0],ranges[1]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[0],ranges[1]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu2ID
-      !p.color=cgcolor('black')
-      utplot, date_plasma, density, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[2],ranges[3]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[2],ranges[3]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[2],ranges[3]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu3ID
-      !p.color=cgcolor('black')
-      utplot, date_plasma, temp/1e5, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[4],ranges[5]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[4],ranges[5]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[4],ranges[5]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu4ID
-      !p.color=cgcolor('black')
-      utplot, date_mag, btsc, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[6],ranges[7]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[6],ranges[7]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[6],ranges[7]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu5ID
-      !p.color=cgcolor('black')
-      utplot, date_mag, bx, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[8],ranges[9]], timerange=[stim,etim],/nodata
-      outplot, [stim,etim], [0,0], color=cgcolor('dark gray'), thick=1.5, linestyle=2
-      outplot, date_mag, bx, color=cgcolor('red'), thick=1.5
-      outplot, date_mag, by, color=cgcolor('green'), thick=1.5
-      outplot, date_mag, bz, color=cgcolor('blue'), thick=1.5
-      outplot, [lineval,lineval],[ranges[8],ranges[9]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[8],ranges[9]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      if map_identifyer eq 'STEREO' then begin
-        xyouts, 0.85,0.87,'B!Dr!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
-        xyouts, 0.9,0.87,'B!Dt!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
-        xyouts, 0.95,0.87,'B!Dn!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
-      endif else begin
-      xyouts, 0.85,0.87,'B!Dx!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
-      xyouts, 0.9,0.87,'B!Dy!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
-      xyouts, 0.95,0.87,'B!Dz!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
-      endelse
-      
-      WSET, insi_ids.draw_insitu6ID
-      !p.color=cgcolor('black')
-      rndvec=randomu(seed, n_elements(date_mag))
-      utplot, date_mag, rndvec, xtit='Time (Starting '+stim+' )', ytit=' ', title=' ', position=[0.08,0.7,0.99,0.99],  Color=cgColor('black'), Background=cgColor('white'), $;psym=10,
-        xstyle=9, ystyle=4,charsize=1, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[0,1], timerange=[stim,etim], /nodata,xticklen=!D.y_VSIZE/100., xminor=4
-      outplot, [lineval,lineval],[-2,1], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[-2,1], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      
-      xmanager, 'insi',insi_main,  /no_block
+;      widget_control,/hourglass
+;      widget_control, ids.ex_main, TLB_GET_OFFSET=offs
+;
+;      insi_main = widget_base(title='CATCH: In-Situ Data', xsize=560, ysize=735,SCR_XSIZE=560,SCR_YSIZE=735,modal=(1-debug), group_leader=ids.ex_main, xoffset=offs[0]+220, yoffset=offs[1]-20)
+;
+;      top_insi = Widget_Base(insi_main, XOFFSET=10)
+;      label = Widget_Label(top_insi, value='In-Situ Data', XOFFSET=10)
+;      labelGeometry = Widget_Info(label, /GEOMETRY)
+;      labelYSize =  labelGeometry.ysize
+;      insi = Widget_Base(top_insi, /FRAME, YOFFSET=labelYSize/2, YPAD=10, XPAD=10,ysize=715,xsize=540)
+;      label = Widget_Label(top_insi, value='In-Situ Data', XOFFSET=10)
+;
+;      min_date=anytim(anytim(date_map)-24.*3600.*5.,/ccsds) & max_date=anytim(anytim(date_map)+24.*3600.*20.,/ccsds)
+;      
+;      if map_identifyer eq 'STEREO' then begin
+;        if strmatch(workmap.id,'*STEREO_A*', /fold_case) eq 1 then begin & obs= map_identifyer+'_A' & sat='STA' & endif
+;        if strmatch(workmap.id,'*STEREO_B*', /fold_case) eq 1 then begin & obs= map_identifyer+'_B' & sat='STB' & endif
+;        
+;      ;res=dialog_message('Stereo In-Situ data not yet available!', dialog_parent=ids.ex_main)
+;      ;return
+;        
+;        
+;        
+;        file_unzip, dir+'stereo_insitu_data.zip',files=flist
+;        
+;        yr=strmid(min_date, 0,4)
+;        match1=strmatch(flist,'*'+sat+'*PLASTIC*'+yr+'*', /fold_case)
+;        match2=strmatch(flist,'*'+sat+'*MAG*'+yr+'*', /fold_case)
+;        
+;        l_index1=where(match1 eq 1,/null) 
+;        if l_index1 ge 0 then begin
+;        plasma_file=flist[l_index1]
+;        endif else begin
+;        res=dialog_message('No STEREO data available!', dialog_parent=ids.ex_main)
+;            return
+;          endelse
+;          
+;        l_index2=where(match2 eq 1,/null) & mag_file=flist[l_index2]
+;        if l_index2 ge 0 then begin
+;          mag_file=flist[l_index2]
+;           endif else begin
+;          res=dialog_message('No STEREO data available!', dialog_parent=ids.ex_main)
+;          return
+;        endelse
+;        
+;
+;openr, lun, plasma_file, /get_lun
+;line = list()  ;search for end of header (= 'DATA')
+;line_tmp = ''
+;n = 0
+;while line_tmp ne 'DATA:' do begin
+;  readf, lun, line_tmp
+;  line.add, line_tmp
+;  n++
+;endwhile
+;
+;close,/all
+;readcol, plasma_file, yr,mon,dy,hr,mn,sec,dummy,density, speed, temp,dummy,dummy,dummy,format='(I4.2,I4.3,I3.2,I3.2,I3.2,I3.2,I4.3,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5)', /silent,SKIPLINE=n
+;density[where(density eq 1e34)]=!values.f_nan & speed[where(speed eq 1e34)]=!values.f_nan  &  temp[where(temp eq 1e34)]=!values.f_nan
+;atim=anytim(string(yr,f='(I4.4)')+'-'+string(mon,f='(I2.2)')+'-'+string(dy,f='(I2.2)')+'T'+string(hr, f='(I2.2)')+':'+string(mn,f='(I2.2)')+':'+string(sec,f='(I2.2)'))
+;date_plasma=anytim(atim,/ccsds)
+;
+;
+;openr, lun, mag_file, /get_lun
+;line = list()  ;search for end of header (= 'DATA')
+;line_tmp = ''
+;n = 0
+;while line_tmp ne 'DATA:' do begin
+;  readf, lun, line_tmp
+;  line.add, line_tmp
+;  n++
+;endwhile
+;
+;close,/all
+;readcol, mag_file, yr,mon,dy,hr,mn,sec,dummy,br,bt,bn,btsc,dummy,dummy,dummy,dummy,format='(I4.2,I4.3,I3.2,I3.2,I3.2,I3.2,I4.3,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5)', /silent,SKIPLINE=n
+;br[where(br eq 1e34)]=!values.f_nan & bt[where(bt eq 1e34)]=!values.f_nan & bn[where(bn eq 1e34)]=!values.f_nan & btsc[where(btsc eq 1e34)]=!values.f_nan &
+;atim=anytim(string(yr,f='(I4.4)')+'-'+string(mon,f='(I2.2)')+'-'+string(dy,f='(I2.2)')+'T'+string(hr, f='(I2.2)')+':'+string(mn,f='(I2.2)')+':'+string(sec,f='(I2.2)'))
+;date_mag=anytim(atim,/ccsds)
+;
+;bx=br & by=bt & bz=bn
+;
+;         
+;
+;        if strmid(min_date,0,4) ne strmid(max_date,0,4) then begin
+;          
+;          backup_d=density
+;          backup_s=speed
+;          backup_t=temp
+;          backup_btsc=btsc
+;          backup_bx=bx
+;          backup_by=by
+;          backup_bz=bz
+;          backup_dm=date_mag
+;          backup_dp=date_plasma
+;         
+;       
+;          yr=strmid(max_date, 0,4)
+;          match1=strmatch(flist,'*'+sat+'*PLASTIC*'+yr+'*', /fold_case)
+;          match2=strmatch(flist,'*'+sat+'*MAG*'+yr+'*', /fold_case)
+;
+;          l_index1=where(match1 eq 1)
+;          if l_index1 ge 0 then begin
+;            plasma_file=flist[l_index1]
+;          endif else begin
+;            res=dialog_message('No STEREO data available!', dialog_parent=ids.ex_main)
+;            return
+;          endelse
+;
+;          l_index2=where(match2 eq 1) & mag_file=flist[l_index2]
+;          if l_index2 ge 0 then begin
+;            mag_file=flist[l_index2]
+;          endif else begin
+;            res=dialog_message('No STEREO data available!', dialog_parent=ids.ex_main)
+;            return
+;          endelse
+;
+;
+;          openr, lun, plasma_file, /get_lun
+;          line = list()  ;search for end of header (= 'DATA')
+;          line_tmp = ''
+;          n = 0
+;          while line_tmp ne 'DATA:' do begin
+;            readf, lun, line_tmp
+;            line.add, line_tmp
+;            n++
+;          endwhile
+;
+;          close,/all
+;          readcol, plasma_file, yr,mon,dy,hr,mn,sec,dummy,density, speed, temp,dummy,dummy,dummy,format='(I4.2,I4.3,I3.2,I3.2,I3.2,I3.2,I4.3,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5)', /silent,SKIPLINE=n
+;          density[where(density eq 1e34)]=!values.f_nan & speed[where(speed eq 1e34)]=!values.f_nan  &  temp[where(temp eq 1e34)]=!values.f_nan
+;          atim=anytim(string(yr,f='(I4.4)')+'-'+string(mon,f='(I2.2)')+'-'+string(dy,f='(I2.2)')+'T'+string(hr, f='(I2.2)')+':'+string(mn,f='(I2.2)')+':'+string(sec,f='(I2.2)'))
+;          date_plasma=anytim(atim,/ccsds)
+;          
+;
+;          openr, lun, mag_file, /get_lun
+;          line = list()  ;search for end of header (= 'DATA')
+;          line_tmp = ''
+;          n = 0
+;          while line_tmp ne 'DATA:' do begin
+;            readf, lun, line_tmp
+;            line.add, line_tmp
+;            n++
+;          endwhile
+;
+;          close,/all
+;          readcol, mag_file, yr,mon,dy,hr,mn,sec,dummy,br,bt,bn,btsc,dummy,dummy,dummy,dummy,format='(I4.2,I4.3,I3.2,I3.2,I3.2,I3.2,I4.3,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5,F13.5)', /silent,SKIPLINE=n
+;          br[where(br eq 1e34)]=!values.f_nan & bt[where(bt eq 1e34)]=!values.f_nan & bn[where(bn eq 1e34)]=!values.f_nan & btsc[where(btsc eq 1e34)]=!values.f_nan &
+;          atim=anytim(string(yr,f='(I4.4)')+'-'+string(mon,f='(I2.2)')+'-'+string(dy,f='(I2.2)')+'T'+string(hr, f='(I2.2)')+':'+string(mn,f='(I2.2)')+':'+string(sec,f='(I2.2)'))
+;          date_mag=anytim(atim,/ccsds)
+;
+;          bx=br & by=bt & bz=bn
+;        
+;          date_plasma=[backup_dp, date_plasma]
+;          date_mag=[backup_dm, date_mag]
+;          speed=[backup_s, speed]
+;          density=[backup_d, density]
+;          temp=[backup_t, temp]
+;          btsc=[backup_btsc, btsc]
+;          bx=[backup_bx, bx]
+;          by=[backup_by, by]
+;          bz=[backup_bz, bz]
+;        endif
+;        
+;        file_delete, flist,/quiet
+;        
+;        plasmadex=where(anytim(date_plasma) ge anytim(min_date) and anytim(date_plasma) le anytim(max_date))
+;        magdex=where(anytim(date_mag) ge anytim(min_date) and anytim(date_mag) le anytim(max_date))
+;        
+;        date_plasma=date_plasma[plasmadex]
+;        date_mag=date_mag[magdex]
+;        speed=speed[plasmadex]
+;        density=density[plasmadex]
+;        temp=temp[plasmadex]
+;        btsc=btsc[magdex]
+;        bx=bx[magdex]
+;        by=by[magdex]
+;        bz=bz[magdex]
+;
+;      endif else begin
+;      swepamdata=get_acedata(min_date,max_date,/swepam,/monthly)
+;     
+;      speed=swepamdata.b_speed & fill_missing,speed,-9999.90,1
+;      density=swepamdata.p_density & fill_missing,density,-9999.90,1
+;      temp=swepamdata.ion_temp & fill_missing,temp,-100000,1
+;      magdata=get_acedata(min_date,max_date,/mag,/monthly)
+;      
+;      btsc=magdata.bt
+;      bx=magdata.bx
+;      by=magdata.by
+;      bz=magdata.bz
+;
+;      date_plasma=anytim(mjd2any(swepamdata.mjd)+swepamdata.time/1000.,/ccsds)
+;      date_mag=anytim(mjd2any(magdata.mjd)+magdata.time/1000.,/ccsds)
+;      endelse
+;      
+;      stim=strmid(date_map,0,19)
+;      etim=strmid(anytim(anytim(date_map)+24.*3600.*10.,/ccsds),0,19)
+;      
+;      ranges=[min(speed,/nan)*0.9, ceil(max(speed,/nan)*1.1), min(density,/nan)*0.9, ceil(max(density,/nan)*1.1), $
+;            min(temp/1e5,/nan)*0.9, ceil(max(temp/1e5,/nan)*1.1), min(btsc,/nan)*0.9, ceil(max(btsc,/nan)*1.1), $
+;            min([bx,by,bz],/nan)*1.1, ceil(max([bx,by,bz],/nan)*1.1)]
+;      ranges=(ranges)
+;      
+;      start_time=widget_slider(insi,/SUPPRESS_VALUE, uval='s_time', min=0, max=480, value=120., xsize=255, xoffset=10, yoffset=10,/align_center )
+;      end_time=widget_slider(insi,/SUPPRESS_VALUE, uval='e_time', min=0, max=480, value=240., xsize=255, xoffset=275, yoffset=10,/align_center )
+;
+;      start_time_label1 = WIDGET_LABEL(insi, XSIZE=90, VALUE='Start Time:', xoffset=10, yoffset=30,/align_left)
+;      start_time_label2 = WIDGET_LABEL(insi, XSIZE=160, VALUE=stim, xoffset=100, yoffset=30)
+;      end_time_label1 = WIDGET_LABEL(insi, XSIZE=90, VALUE='End Time:', xoffset=275, yoffset=30,/align_left)
+;      end_time_label2 = WIDGET_LABEL(insi, XSIZE=160, VALUE=etim, xoffset=365, yoffset=30)
+;      
+;      help_x=50.
+;      help_x2=help_x-10.
+;      
+;      lab1 = WIDGET_LABEL(insi, XSIZE=75, VALUE='v [km/s]', xoffset=0, yoffset=help_x2+65,/align_center)
+;      lab2 = WIDGET_LABEL(insi, XSIZE=75, VALUE='n [1/cm^3]', xoffset=0, yoffset=help_x2+170,/align_center)
+;      lab3 = WIDGET_LABEL(insi, XSIZE=75, VALUE='T [10^5 K]', xoffset=0, yoffset=help_x2+275,/align_center)
+;      lab4 = WIDGET_LABEL(insi, XSIZE=75, VALUE='B [nT]', xoffset=0, yoffset=help_x2+380,/align_center)
+;      lab5 = WIDGET_LABEL(insi, XSIZE=75, VALUE='Bi [nT]', xoffset=0, yoffset=help_x2+485,/align_center)
+;     
+;      draw_insitu1 = widget_draw(insi, uvalue='draw_1', xsize=455, ysize=100, xoffset=75, yoffset=help_x+10,/frame)
+;      draw_insitu2 = widget_draw(insi, uvalue='draw_2', xsize=455, ysize=100, xoffset=75, yoffset=help_x+115,/frame)
+;      draw_insitu3 = widget_draw(insi, uvalue='draw_3', xsize=455, ysize=100, xoffset=75, yoffset=help_x+220,/frame)
+;      draw_insitu4 = widget_draw(insi, uvalue='draw_4', xsize=455, ysize=100, xoffset=75, yoffset=help_x+325,/frame)
+;      draw_insitu5 = widget_draw(insi, uvalue='draw_5', xsize=455, ysize=100, xoffset=75, yoffset=help_x+430,/frame)
+;      draw_insitu6 = widget_draw(insi, uvalue='draw_5', xsize=455, ysize=50, xoffset=75, yoffset=help_x+535,/frame)
+;      mark_slider=widget_slider(insi,/SUPPRESS_VALUE, uval='mark', min=0, max=1000, value=400., xsize=465, xoffset=70, yoffset=help_x+600,/align_center )
+;      
+;      ;abort_insi= widget_button(insi,value='Done', uval='abort_insi',/NO_release, xsize=150. , xoffset=400., yoffset=help_x+610, tooltip='Close in-situ window',ysize=25)
+;      
+;      lab_curr = WIDGET_LABEL(insi, XSIZE=130, VALUE='Time at guideline:', xoffset=10, yoffset=help_x+635,/align_left)
+;      
+;      lab_current = WIDGET_LABEL(insi, XSIZE=180, VALUE=' ', xoffset=130, yoffset=help_x+635,/align_center)
+;      
+;      save_insi= widget_button(insi,value='Save Image', uval='save_insi',/NO_release, xsize=100. , xoffset=320., yoffset=help_x+630, tooltip='Save image to output directory',ysize=25)
+;      abort_insi= widget_button(insi,value='Done', uval='abort_insi',/NO_release, xsize=100. , xoffset=430., yoffset=help_x+630, tooltip='Close in-situ window',ysize=25)
+;
+;      widget_control, draw_insitu1,sensitive=0
+;      widget_control, draw_insitu2,sensitive=0 
+;      widget_control, draw_insitu3,sensitive=0 
+;      widget_control, draw_insitu4,sensitive=0 
+;      widget_control, draw_insitu5,sensitive=0 
+;      widget_control, draw_insitu6,sensitive=0
+;      ;widget_control, save_insi, sensitive=0  
+;
+;
+;      widget_control, insi_main, /realize
+;      
+;      
+;      WIDGET_CONTROL, draw_insitu1, GET_VALUE=draw_insitu1ID
+;      WIDGET_CONTROL, draw_insitu2, GET_VALUE=draw_insitu2ID
+;      WIDGET_CONTROL, draw_insitu3, GET_VALUE=draw_insitu3ID
+;      WIDGET_CONTROL, draw_insitu4, GET_VALUE=draw_insitu4ID
+;      WIDGET_CONTROL, draw_insitu5, GET_VALUE=draw_insitu5ID
+;      WIDGET_CONTROL, draw_insitu6, GET_VALUE=draw_insitu6ID
+;      
+;            insi_ids={draw_insitu1ID:draw_insitu1ID,draw_insitu2ID:draw_insitu2ID,draw_insitu3ID:draw_insitu3ID,$
+;                draw_insitu4ID:draw_insitu4ID,draw_insitu5ID:draw_insitu5ID,draw_insitu6ID:draw_insitu6ID, lab_current:lab_current,$
+;                start_time:start_time_label2,end_time:end_time_label2, abort_insi:abort_insi, save_insi:save_insi,$
+;                mark_slider:mark_slider, start_time_slider:start_time, end_time_slider:end_time,insi_main:insi_main }
+;                
+;      widget_control, insi_ids.mark_slider, get_value=slider_val  &   tr=(anytim(etim)-anytim(stim)) & lineval=anytim(anytim(stim)+(tr*float(slider_val))/1e3,/ccsds)
+;      widget_control, insi_ids.start_time, get_value=stim
+;      widget_control, insi_ids.end_time, get_value=etim
+;      widget_control, insi_ids.lab_current, set_value=strmid(lineval,0,19)
+;      
+;WSET, insi_ids.draw_insitu1ID
+;      !p.color=cgcolor('black')
+;      utplot, date_plasma, speed, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[0],ranges[1]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[0],ranges[1]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[0],ranges[1]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu2ID
+;      !p.color=cgcolor('black')
+;      utplot, date_plasma, density, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[2],ranges[3]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[2],ranges[3]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[2],ranges[3]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu3ID
+;      !p.color=cgcolor('black')
+;      utplot, date_plasma, temp/1e5, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[4],ranges[5]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[4],ranges[5]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[4],ranges[5]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu4ID
+;      !p.color=cgcolor('black')
+;      utplot, date_mag, btsc, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[6],ranges[7]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[6],ranges[7]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[6],ranges[7]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu5ID
+;      !p.color=cgcolor('black')
+;      utplot, date_mag, bx, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[8],ranges[9]], timerange=[stim,etim],/nodata
+;      outplot, [stim,etim], [0,0], color=cgcolor('dark gray'), thick=1.5, linestyle=2
+;      outplot, date_mag, bx, color=cgcolor('red'), thick=1.5
+;      outplot, date_mag, by, color=cgcolor('green'), thick=1.5
+;      outplot, date_mag, bz, color=cgcolor('blue'), thick=1.5
+;      outplot, [lineval,lineval],[ranges[8],ranges[9]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[8],ranges[9]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      if map_identifyer eq 'STEREO' then begin
+;        xyouts, 0.85,0.87,'B!Dr!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
+;        xyouts, 0.9,0.87,'B!Dt!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
+;        xyouts, 0.95,0.87,'B!Dn!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
+;      endif else begin
+;      xyouts, 0.85,0.87,'B!Dx!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
+;      xyouts, 0.9,0.87,'B!Dy!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
+;      xyouts, 0.95,0.87,'B!Dz!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
+;      endelse
+;      
+;      WSET, insi_ids.draw_insitu6ID
+;      !p.color=cgcolor('black')
+;      rndvec=randomu(seed, n_elements(date_mag))
+;      utplot, date_mag, rndvec, xtit='Time (Starting '+stim+' )', ytit=' ', title=' ', position=[0.08,0.7,0.99,0.99],  Color=cgColor('black'), Background=cgColor('white'), $;psym=10,
+;        xstyle=9, ystyle=4,charsize=1, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[0,1], timerange=[stim,etim], /nodata,xticklen=!D.y_VSIZE/100., xminor=4
+;      outplot, [lineval,lineval],[-2,1], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[-2,1], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      
+;      xmanager, 'insi',insi_main,  /no_block
     end
     
     'poptions': begin
@@ -1519,8 +1524,8 @@ Set_Plot, 'X'
       endif
       
         if changes gt 0 then begin
-          write_ini_catch, dir+'config_CATCH.ini', new_paths,ids.ex_main, /struct_old
-    if  systim(/sec)-file_modtime(dir+'/config_CATCH.ini') lt 10 then  paths=new_paths
+          write_ini_catch, getenv('HOME')+'/.config_CATCH.ini', new_paths,ids.ex_main, /struct_old
+    if  systim(/sec)-file_modtime(getenv('HOME')+'/.config_CATCH.ini') lt 10 then  paths=new_paths
         endif     
       
       ENDIF
@@ -1568,8 +1573,8 @@ Set_Plot, 'X'
       endif
 
         if changes gt 0 then begin
-          write_ini_catch, dir+'config_CATCH.ini', new_paths,ids.ex_main, /struct_old
-         if  systim(/sec)-file_modtime(dir+'/config_CATCH.ini') lt 10 then  paths=new_paths
+          write_ini_catch, getenv('HOME')+'/.config_CATCH.ini', new_paths,ids.ex_main, /struct_old
+         if  systim(/sec)-file_modtime(getenv('HOME')+'/.config_CATCH.ini') lt 10 then  paths=new_paths
         endif
 
       ENDIF
@@ -1579,465 +1584,465 @@ Set_Plot, 'X'
 
 END
 
-PRO insi_event, ev                                          ; event handler
-  common general, id, paths,dir,debug
-  common menu_id, menuid
-  common insitu, insi_ids, date_map, date_plasma, speed, density, temp, date_mag, btsc, bx,by,bz,ranges
-  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso 
-  
-  widget_control, ev.id, get_uvalue=uvalue
-
-  CASE uvalue OF
-    's_time':begin
-      
-      widget_control, insi_ids.start_time_slider, get_value=stim_val
-
-      stim= anytim(anytim(date_map)-5.*24.*3600.+ float(stim_val)*3600.,/ccsds)
-      
-      
-      widget_control, insi_ids.start_time, set_value=stim
-      widget_control, insi_ids.end_time, get_value=etim
-      if anytim(stim) ge (anytim(etim)-24.*3600.) then begin
-        etim=anytim(anytim(stim)+24.*3600.,/ccsds)
-        widget_control, insi_ids.end_time, set_value=etim
-        etim_val=(anytim(etim)-anytim(date_map))/3600.
-        widget_control, insi_ids.end_time_slider, set_value=etim_val
-      endif
-      
-      widget_control, insi_ids.mark_slider, get_value=slider_val      &  tr=(anytim(etim)-anytim(stim)) & lineval=anytim(anytim(stim)+(tr*float(slider_val))/1e3,/ccsds)
-      widget_control, insi_ids.lab_current, set_value=strmid(lineval,0,19)
-      
-WSET, insi_ids.draw_insitu1ID
-      !p.color=cgcolor('black')
-      utplot, date_plasma, speed, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[0],ranges[1]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[0],ranges[1]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[0],ranges[1]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu2ID
-      !p.color=cgcolor('black')
-      utplot, date_plasma, density, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[2],ranges[3]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[2],ranges[3]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[2],ranges[3]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu3ID
-      !p.color=cgcolor('black')
-      utplot, date_plasma, temp/1e5, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[4],ranges[5]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[4],ranges[5]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[4],ranges[5]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu4ID
-      !p.color=cgcolor('black')
-      utplot, date_mag, btsc, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[6],ranges[7]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[6],ranges[7]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[6],ranges[7]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu5ID
-      !p.color=cgcolor('black')
-      utplot, date_mag, bx, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[8],ranges[9]], timerange=[stim,etim],/nodata
-      outplot, [stim,etim], [0,0], color=cgcolor('dark gray'), thick=1.5, linestyle=2
-      outplot, date_mag, bx, color=cgcolor('red'), thick=1.5
-      outplot, date_mag, by, color=cgcolor('green'), thick=1.5
-      outplot, date_mag, bz, color=cgcolor('blue'), thick=1.5
-      outplot, [lineval,lineval],[ranges[8],ranges[9]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[8],ranges[9]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      if map_identifyer eq 'STEREO' then begin
-        xyouts, 0.85,0.87,'B!Dr!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
-        xyouts, 0.9,0.87,'B!Dt!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
-        xyouts, 0.95,0.87,'B!Dn!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
-      endif else begin
-      xyouts, 0.85,0.87,'B!Dx!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
-      xyouts, 0.9,0.87,'B!Dy!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
-      xyouts, 0.95,0.87,'B!Dz!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
-      endelse
-      
-      WSET, insi_ids.draw_insitu6ID
-      !p.color=cgcolor('black')
-      rndvec=randomu(seed, n_elements(date_mag))
-      utplot, date_mag, rndvec, xtit='Time (Starting '+stim+' )', ytit=' ', title=' ', position=[0.08,0.7,0.99,0.99],  Color=cgColor('black'), Background=cgColor('white'), $;psym=10,
-        xstyle=9, ystyle=4,charsize=1, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[0,1], timerange=[stim,etim], /nodata,xticklen=!D.y_VSIZE/100., xminor=4
-      outplot, [lineval,lineval],[-2,1], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[-2,1], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      end
-    'e_time':begin
-              
-      widget_control, insi_ids.end_time_slider, get_value=etim_val
-      
-      etim= anytim(anytim(date_map)+ etim_val*3600.,/ccsds)
-      
-      widget_control, insi_ids.start_time, get_value=stim
-      widget_control, insi_ids.end_time, set_value=etim
-      if anytim(etim) le (anytim(stim)+24.*3600.) then begin
-        stim=anytim(anytim(etim)-24.*3600.,/ccsds)
-        widget_control, insi_ids.start_time, set_value=stim
-        stim_val=(anytim(stim)-(anytim(date_map)-24.*5.*3600.))/3600.
-        widget_control, insi_ids.start_time_slider, set_value=stim_val
-      endif
-      
-      widget_control, insi_ids.mark_slider, get_value=slider_val      &  tr=(anytim(etim)-anytim(stim)) & lineval=anytim(anytim(stim)+(tr*float(slider_val))/1e3,/ccsds)
-      widget_control, insi_ids.lab_current, set_value=strmid(lineval,0,19)
-      
-WSET, insi_ids.draw_insitu1ID
-      !p.color=cgcolor('black')
-      utplot, date_plasma, speed, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[0],ranges[1]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[0],ranges[1]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[0],ranges[1]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu2ID
-      !p.color=cgcolor('black')
-      utplot, date_plasma, density, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[2],ranges[3]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[2],ranges[3]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[2],ranges[3]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu3ID
-      !p.color=cgcolor('black')
-      utplot, date_plasma, temp/1e5, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[4],ranges[5]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[4],ranges[5]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[4],ranges[5]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu4ID
-      !p.color=cgcolor('black')
-      utplot, date_mag, btsc, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[6],ranges[7]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[6],ranges[7]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[6],ranges[7]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu5ID
-      !p.color=cgcolor('black')
-      utplot, date_mag, bx, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[8],ranges[9]], timerange=[stim,etim],/nodata
-      outplot, [stim,etim], [0,0], color=cgcolor('dark gray'), thick=1.5, linestyle=2
-      outplot, date_mag, bx, color=cgcolor('red'), thick=1.5
-      outplot, date_mag, by, color=cgcolor('green'), thick=1.5
-      outplot, date_mag, bz, color=cgcolor('blue'), thick=1.5
-      outplot, [lineval,lineval],[ranges[8],ranges[9]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[8],ranges[9]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      if map_identifyer eq 'STEREO' then begin
-        xyouts, 0.85,0.87,'B!Dr!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
-        xyouts, 0.9,0.87,'B!Dt!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
-        xyouts, 0.95,0.87,'B!Dn!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
-      endif else begin
-      xyouts, 0.85,0.87,'B!Dx!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
-      xyouts, 0.9,0.87,'B!Dy!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
-      xyouts, 0.95,0.87,'B!Dz!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
-      endelse
-      
-      WSET, insi_ids.draw_insitu6ID
-      !p.color=cgcolor('black')
-      rndvec=randomu(seed, n_elements(date_mag))
-      utplot, date_mag, rndvec, xtit='Time (Starting '+stim+' )', ytit=' ', title=' ', position=[0.08,0.7,0.99,0.99],  Color=cgColor('black'), Background=cgColor('white'), $;psym=10,
-        xstyle=9, ystyle=4,charsize=1, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[0,1], timerange=[stim,etim], /nodata,xticklen=!D.y_VSIZE/100., xminor=4
-      outplot, [lineval,lineval],[-2,1], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[-2,1], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      end
-    'mark':begin
-      widget_control,/hourglass
-      widget_control, insi_ids.start_time, get_value=stim
-      widget_control, insi_ids.end_time, get_value=etim
-      widget_control, insi_ids.mark_slider, get_value=slider_val      &  tr=(anytim(etim)-anytim(stim)) & lineval=anytim(anytim(stim)+(tr*float(slider_val))/1e3,/ccsds)
-      widget_control, insi_ids.lab_current, set_value=strmid(lineval,0,19)
-      
-WSET, insi_ids.draw_insitu1ID
-      !p.color=cgcolor('black')
-      utplot, date_plasma, speed, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[0],ranges[1]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[0],ranges[1]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[0],ranges[1]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu2ID
-      !p.color=cgcolor('black')
-      utplot, date_plasma, density, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[2],ranges[3]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[2],ranges[3]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[2],ranges[3]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu3ID
-      !p.color=cgcolor('black')
-      utplot, date_plasma, temp/1e5, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[4],ranges[5]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[4],ranges[5]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[4],ranges[5]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu4ID
-      !p.color=cgcolor('black')
-      utplot, date_mag, btsc, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[6],ranges[7]], timerange=[stim,etim]
-      outplot, [lineval,lineval],[ranges[6],ranges[7]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[6],ranges[7]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      WSET, insi_ids.draw_insitu5ID
-      !p.color=cgcolor('black')
-      utplot, date_mag, bx, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
-        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[8],ranges[9]], timerange=[stim,etim],/nodata
-      outplot, [stim,etim], [0,0], color=cgcolor('dark gray'), thick=1.5, linestyle=2
-      outplot, date_mag, bx, color=cgcolor('red'), thick=1.5
-      outplot, date_mag, by, color=cgcolor('green'), thick=1.5
-      outplot, date_mag, bz, color=cgcolor('blue'), thick=1.5
-      outplot, [lineval,lineval],[ranges[8],ranges[9]*1.5], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[ranges[8],ranges[9]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      if map_identifyer eq 'STEREO' then begin
-        xyouts, 0.85,0.87,'B!Dr!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
-        xyouts, 0.9,0.87,'B!Dt!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
-        xyouts, 0.95,0.87,'B!Dn!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
-      endif else begin
-      xyouts, 0.85,0.87,'B!Dx!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
-      xyouts, 0.9,0.87,'B!Dy!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
-      xyouts, 0.95,0.87,'B!Dz!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
-      endelse
-      
-      WSET, insi_ids.draw_insitu6ID
-      !p.color=cgcolor('black')
-      rndvec=randomu(seed, n_elements(date_mag))
-      utplot, date_mag, rndvec, xtit='Time (Starting '+stim+' )', ytit=' ', title=' ', position=[0.08,0.7,0.99,0.99],  Color=cgColor('black'), Background=cgColor('white'), $;psym=10,
-        xstyle=9, ystyle=4,charsize=1, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[0,1], timerange=[stim,etim], /nodata,xticklen=!D.y_VSIZE/100., xminor=4
-      outplot, [lineval,lineval],[-2,1], color=cgcolor('red'), thick=1
-      outplot, [date_map,date_map],[-2,1], color=cgcolor('blue'), thick=1, linestyle=2
-      
-      end
-    'abort_insi': WIDGET_CONTROL, insi_ids.insi_main,/destroy
-    'save_insi': begin
-      widget_control,/hourglass
-      
-      x_size=21.0       ;x size in cm
-      y_size=29.7     ;x size in cm
-      x_offset=0
-      y_offset=1
-
-      lin_thick=2
-      ;---------------------------------------- Data ----------------------------------------
-      ;timerange
-      widget_control, insi_ids.start_time, get_value=stim
-      widget_control, insi_ids.end_time, get_value=etim
-      xr=[stim,etim]
-
-
-      if map_identifyer eq 'SOHO' or map_identifyer eq 'SDO' then begin & obs= 'ACE' & endif else begin
-        if strmatch(workmap.id,'*STEREO_A*', /fold_case) eq 1 then obs= map_identifyer+'_A'
-        if strmatch(workmap.id,'*STEREO_B*', /fold_case) eq 1 then obs= map_identifyer+'_B'
-      endelse
-      
-      ;title
-      tit='In-Situ Measurements '+obs
-
-      cloudstart=[date_map,date_map]
-
-      ;panel 1:         density
-      yr1=[ranges[2],ranges[3]]
-      y1=density
-      ytit1='N!Dp!N [cm!U-3!N]'
-      x1=date_plasma
-
-      ;panel 2:         velocity
-      yr2=[ranges[0],ranges[1]]
-      y2=speed
-      ytit2='v!Dp!N [km s!U-1!N]'
-      x2=date_plasma
-
-      ;panel 3:         temperature
-      yr3=[ranges[4],ranges[5]]
-      y3=temp/1e5
-      ytit3='T!Dp!N [10!U5!N K]
-      x3=date_plasma
-      ;----------------------
-      ;expected temp
-      h500= where(y2 gt 500)
-      l500= where(y2 le 500)
-      y3_exp=y2
-      ;dis=SATELLITE_HCI_5m.radius[*]/double(149578710)
-      ;y4_exp[l500]=(((0.0106*y1[l500] - 0.278)*3.)/dis)/1e2
-      ;y4_exp[h500]=((0.77*y1[h500] - 265.)/dis)/1e2
-
-      y3_exp[h500]=(0.77*y2[h500]-265)/1e2
-      y3_exp[l500]=((0.031*y2[l500]-4.39)^2.)/1e2
-      ;------------------------------------------------
-      ;
-
-      ;panel 5-8:         magnetic field
-      yr6=[ranges[8],ranges[9]]
-      yr6_abs=[ranges[6],ranges[7]]
-      y6=btsc
-      y6_x=bx
-      y6_y=by
-      y6_z= bz
-      ytit6='B [nT]'
-      
-      if map_identifyer eq 'STEREO' then begin
-        ytit6_x='B!Dr!N [nT]'
-        ytit6_y='B!Dt!N [nT]'
-        ytit6_z='B!Dn!N [nT]'
-      endif else begin
-        ytit6_x='B!Dx!N [nT]'
-        ytit6_y='B!Dy!N [nT]'
-        ytit6_z='B!Dz!N [nT]'
-      endelse
-      
-      x6=date_mag
-      x6x=date_mag
-      x6y=date_mag
-      x6z=date_mag
-
-
-      widget_control, ids.sv_path, get_value=temp_path
-      
-      outname=temp_path+strmid(windex.date_obs,0,16)+'_'+obs+'_in_situ_plot.eps'
-      
-      if file_test(outname) eq 1 then begin
-        res=dialog_message( ['                                    ',$
-          '       File already exists!         ',$
-          '     Do you want to overwrite!      ',$
-          '                                    '], dialog_parent=ids.ex_main,/question)
-        if res eq 'No' then begin
-          file_number=1
-          while file_test(outname) eq 1 do begin
-            file_number++
-            outname=temp_path+strmid(windex.date_obs,0,16)+'_'+obs+'_in_situ_plot_'+strtrim(string(file_number),2)+'.eps'
-          endwhile
-        endif
-
-      endif
-      
-      
-      SET_PLOT, 'PS'
-      device, filename=outname,xsize = x_size, ysize = y_size, xoffset = x_offset, yoffset = y_offset, encaps = 1,color=1,decomposed=1, landscape=0
-      !p.multi=[0,20,1]
-
-      xticklength=0.08
-      
-
-      ;panel 1
-      pn=1
-      utplot, x1, y1,  ytit=' ' , title=tit, thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr1, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-
-      outplot,cloudstart,yr1, linestyle=0, color =cgcolor('dodger blue'),thick=3
-
-
-      utplot, x1, y1,  ytit=ytit1 , title=tit, thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr1, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-      
-
-      outplot, x1, y1, linestyle=0, color =cgcolor('black'),thick=lin_thick
-
-      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
-      axis,  xaxis=1,/nodata, xthick=3,XTICKFORMAT="(A1)",xticklen=0.00005;xticklength
-
-      ;panel 2
-      pn=2
-      utplot, x2, y2, ytit=' ' , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr2, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-
-      outplot,cloudstart,yr2, linestyle=0, color =cgcolor('dodger blue'),thick=3
-
-      utplot, x2, y2, ytit=ytit2 , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr2, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-
-      outplot, x2, y2, linestyle=0, color =cgcolor('black'),thick=lin_thick
-
-      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
-
-
-      ;panel 3
-      pn=3
-      utplot, x3, y3, ytit=' ' , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr3, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-
-      outplot,cloudstart,yr3, linestyle=0, color =cgcolor('dodger blue'),thick=3
-
-      utplot, x3, y3, ytit=ytit3 , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr3, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-      
-
-      outplot, x3, y3, linestyle=0, color =cgcolor('black'),thick=lin_thick
-
-      outplot, x2, y3_exp,linestyle=0, color =cgcolor('red'),thick=lin_thick+1
-
-      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
-      xyouts, 0.87,  0.91-0.135*(pn-0.7),'T!Dexp!N',size=1.3, charthick=3.5, color=cgcolor('red'),/NORMAL, alignment=1
-
-      ;panel 4
-      pn=4
-      
-      utplot, x6, y6, ytit=' ' , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6_abs, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-      
-      outplot,cloudstart,yr6_abs, linestyle=0, color =cgcolor('dodger blue'),thick=3
-      
-      utplot, x6, y6, ytit=ytit6 , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6_abs, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-      
-      outplot, x6,y6, linestyle=0, color =cgcolor('black'),thick=lin_thick
-      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
-      
-
-      ;panel 5
-      pn=5
-      
-      utplot, x6, y6_x, ytit=' ' , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-        xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-
-      outplot,cloudstart,yr6, linestyle=0, color =cgcolor('dodger blue'),thick=3
-
-      utplot, x6, y6_x, ytit=ytit6_x , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-        xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-      
-      outplot,[x6[0],x6[-1]],[0,0], linestyle=1, color =cgcolor('dark gray'),thick=2
-      outplot, x6,y6_x, linestyle=0, color =cgcolor('black'),thick=lin_thick
-      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
-      
-      ;panel 6
-      pn=6
-
-      utplot, x6, y6_y, ytit=' ' , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-        xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-
-      outplot,cloudstart,yr6, linestyle=0, color =cgcolor('dodger blue'),thick=3
-
-      utplot, x6, y6_y, ytit=ytit6_y , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-        xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-
-      outplot,[x6[0],x6[-1]],[0,0], linestyle=1, color =cgcolor('dark gray'),thick=2
-      outplot, x6,y6_y, linestyle=0, color =cgcolor('black'),thick=lin_thick
-      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
-      
-      ;panel 7
-      pn=7
-
-      utplot, x6, y6_z, ytit=' ' , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-        xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
-
-      outplot,cloudstart,yr6, linestyle=0, color =cgcolor('dodger blue'),thick=3
-
-      utplot, x6, y6_z, ytit=ytit6_z , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
-        xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6, xthick=3, ythick=3,charthick=3,charsize=2,/nodata, xtit='Time after ' + strmid(strtrim(string(stim),2),0,16),yminor=1,xticklen=xticklength
-
-      outplot,[x6[0],x6[-1]],[0,0], linestyle=1, color =cgcolor('dark gray'),thick=2
-      outplot, x6,y6_z, linestyle=0, color =cgcolor('black'),thick=lin_thick
-      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
-      
-
-      clear_utplot
-      DEVICE, /CLOSE_FILE
-      SET_PLOT, 'X'
-      !p.multi=0
-      
-      res=dialog_message('In-Situ plot saved!', dialog_parent=insi_ids.insi_main)
-      
-      end
-  
-  endcase
-end
+;PRO insi_event, ev                                          ; event handler
+;  common general, id, paths,dir,debug
+;  common menu_id, menuid
+;  common insitu, insi_ids, date_map, date_plasma, speed, density, temp, date_mag, btsc, bx,by,bz,ranges
+;  common ex, ids, temp_path, themap, workmap, binmap, lfiles, map_identifyer,windex, dcord, xcord,ycord, bmaps, extracted,ch_prop, plot_scl,chmaps,thr_value,reso 
+;  
+;  widget_control, ev.id, get_uvalue=uvalue
+;
+;  CASE uvalue OF
+;    's_time':begin
+;      
+;      widget_control, insi_ids.start_time_slider, get_value=stim_val
+;
+;      stim= anytim(anytim(date_map)-5.*24.*3600.+ float(stim_val)*3600.,/ccsds)
+;      
+;      
+;      widget_control, insi_ids.start_time, set_value=stim
+;      widget_control, insi_ids.end_time, get_value=etim
+;      if anytim(stim) ge (anytim(etim)-24.*3600.) then begin
+;        etim=anytim(anytim(stim)+24.*3600.,/ccsds)
+;        widget_control, insi_ids.end_time, set_value=etim
+;        etim_val=(anytim(etim)-anytim(date_map))/3600.
+;        widget_control, insi_ids.end_time_slider, set_value=etim_val
+;      endif
+;      
+;      widget_control, insi_ids.mark_slider, get_value=slider_val      &  tr=(anytim(etim)-anytim(stim)) & lineval=anytim(anytim(stim)+(tr*float(slider_val))/1e3,/ccsds)
+;      widget_control, insi_ids.lab_current, set_value=strmid(lineval,0,19)
+;      
+;WSET, insi_ids.draw_insitu1ID
+;      !p.color=cgcolor('black')
+;      utplot, date_plasma, speed, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[0],ranges[1]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[0],ranges[1]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[0],ranges[1]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu2ID
+;      !p.color=cgcolor('black')
+;      utplot, date_plasma, density, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[2],ranges[3]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[2],ranges[3]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[2],ranges[3]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu3ID
+;      !p.color=cgcolor('black')
+;      utplot, date_plasma, temp/1e5, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[4],ranges[5]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[4],ranges[5]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[4],ranges[5]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu4ID
+;      !p.color=cgcolor('black')
+;      utplot, date_mag, btsc, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[6],ranges[7]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[6],ranges[7]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[6],ranges[7]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu5ID
+;      !p.color=cgcolor('black')
+;      utplot, date_mag, bx, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[8],ranges[9]], timerange=[stim,etim],/nodata
+;      outplot, [stim,etim], [0,0], color=cgcolor('dark gray'), thick=1.5, linestyle=2
+;      outplot, date_mag, bx, color=cgcolor('red'), thick=1.5
+;      outplot, date_mag, by, color=cgcolor('green'), thick=1.5
+;      outplot, date_mag, bz, color=cgcolor('blue'), thick=1.5
+;      outplot, [lineval,lineval],[ranges[8],ranges[9]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[8],ranges[9]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      if map_identifyer eq 'STEREO' then begin
+;        xyouts, 0.85,0.87,'B!Dr!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
+;        xyouts, 0.9,0.87,'B!Dt!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
+;        xyouts, 0.95,0.87,'B!Dn!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
+;      endif else begin
+;      xyouts, 0.85,0.87,'B!Dx!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
+;      xyouts, 0.9,0.87,'B!Dy!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
+;      xyouts, 0.95,0.87,'B!Dz!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
+;      endelse
+;      
+;      WSET, insi_ids.draw_insitu6ID
+;      !p.color=cgcolor('black')
+;      rndvec=randomu(seed, n_elements(date_mag))
+;      utplot, date_mag, rndvec, xtit='Time (Starting '+stim+' )', ytit=' ', title=' ', position=[0.08,0.7,0.99,0.99],  Color=cgColor('black'), Background=cgColor('white'), $;psym=10,
+;        xstyle=9, ystyle=4,charsize=1, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[0,1], timerange=[stim,etim], /nodata,xticklen=!D.y_VSIZE/100., xminor=4
+;      outplot, [lineval,lineval],[-2,1], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[-2,1], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      end
+;    'e_time':begin
+;              
+;      widget_control, insi_ids.end_time_slider, get_value=etim_val
+;      
+;      etim= anytim(anytim(date_map)+ etim_val*3600.,/ccsds)
+;      
+;      widget_control, insi_ids.start_time, get_value=stim
+;      widget_control, insi_ids.end_time, set_value=etim
+;      if anytim(etim) le (anytim(stim)+24.*3600.) then begin
+;        stim=anytim(anytim(etim)-24.*3600.,/ccsds)
+;        widget_control, insi_ids.start_time, set_value=stim
+;        stim_val=(anytim(stim)-(anytim(date_map)-24.*5.*3600.))/3600.
+;        widget_control, insi_ids.start_time_slider, set_value=stim_val
+;      endif
+;      
+;      widget_control, insi_ids.mark_slider, get_value=slider_val      &  tr=(anytim(etim)-anytim(stim)) & lineval=anytim(anytim(stim)+(tr*float(slider_val))/1e3,/ccsds)
+;      widget_control, insi_ids.lab_current, set_value=strmid(lineval,0,19)
+;      
+;WSET, insi_ids.draw_insitu1ID
+;      !p.color=cgcolor('black')
+;      utplot, date_plasma, speed, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[0],ranges[1]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[0],ranges[1]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[0],ranges[1]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu2ID
+;      !p.color=cgcolor('black')
+;      utplot, date_plasma, density, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[2],ranges[3]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[2],ranges[3]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[2],ranges[3]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu3ID
+;      !p.color=cgcolor('black')
+;      utplot, date_plasma, temp/1e5, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[4],ranges[5]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[4],ranges[5]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[4],ranges[5]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu4ID
+;      !p.color=cgcolor('black')
+;      utplot, date_mag, btsc, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[6],ranges[7]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[6],ranges[7]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[6],ranges[7]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu5ID
+;      !p.color=cgcolor('black')
+;      utplot, date_mag, bx, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[8],ranges[9]], timerange=[stim,etim],/nodata
+;      outplot, [stim,etim], [0,0], color=cgcolor('dark gray'), thick=1.5, linestyle=2
+;      outplot, date_mag, bx, color=cgcolor('red'), thick=1.5
+;      outplot, date_mag, by, color=cgcolor('green'), thick=1.5
+;      outplot, date_mag, bz, color=cgcolor('blue'), thick=1.5
+;      outplot, [lineval,lineval],[ranges[8],ranges[9]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[8],ranges[9]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      if map_identifyer eq 'STEREO' then begin
+;        xyouts, 0.85,0.87,'B!Dr!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
+;        xyouts, 0.9,0.87,'B!Dt!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
+;        xyouts, 0.95,0.87,'B!Dn!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
+;      endif else begin
+;      xyouts, 0.85,0.87,'B!Dx!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
+;      xyouts, 0.9,0.87,'B!Dy!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
+;      xyouts, 0.95,0.87,'B!Dz!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
+;      endelse
+;      
+;      WSET, insi_ids.draw_insitu6ID
+;      !p.color=cgcolor('black')
+;      rndvec=randomu(seed, n_elements(date_mag))
+;      utplot, date_mag, rndvec, xtit='Time (Starting '+stim+' )', ytit=' ', title=' ', position=[0.08,0.7,0.99,0.99],  Color=cgColor('black'), Background=cgColor('white'), $;psym=10,
+;        xstyle=9, ystyle=4,charsize=1, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[0,1], timerange=[stim,etim], /nodata,xticklen=!D.y_VSIZE/100., xminor=4
+;      outplot, [lineval,lineval],[-2,1], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[-2,1], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      end
+;    'mark':begin
+;      widget_control,/hourglass
+;      widget_control, insi_ids.start_time, get_value=stim
+;      widget_control, insi_ids.end_time, get_value=etim
+;      widget_control, insi_ids.mark_slider, get_value=slider_val      &  tr=(anytim(etim)-anytim(stim)) & lineval=anytim(anytim(stim)+(tr*float(slider_val))/1e3,/ccsds)
+;      widget_control, insi_ids.lab_current, set_value=strmid(lineval,0,19)
+;      
+;WSET, insi_ids.draw_insitu1ID
+;      !p.color=cgcolor('black')
+;      utplot, date_plasma, speed, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[0],ranges[1]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[0],ranges[1]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[0],ranges[1]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu2ID
+;      !p.color=cgcolor('black')
+;      utplot, date_plasma, density, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[2],ranges[3]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[2],ranges[3]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[2],ranges[3]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu3ID
+;      !p.color=cgcolor('black')
+;      utplot, date_plasma, temp/1e5, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[4],ranges[5]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[4],ranges[5]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[4],ranges[5]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu4ID
+;      !p.color=cgcolor('black')
+;      utplot, date_mag, btsc, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[6],ranges[7]], timerange=[stim,etim]
+;      outplot, [lineval,lineval],[ranges[6],ranges[7]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[6],ranges[7]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      WSET, insi_ids.draw_insitu5ID
+;      !p.color=cgcolor('black')
+;      utplot, date_mag, bx, xtit=' ', ytit=' ', title=' ', position=[0.08,0.01,0.99,0.95],  Color=cgColor('black'), Background=cgColor('white'), yminor=6,xticklen=!D.y_VSIZE/700., $;psym=10,
+;        xstyle=9, ystyle=9,charsize=1.2, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[ranges[8],ranges[9]], timerange=[stim,etim],/nodata
+;      outplot, [stim,etim], [0,0], color=cgcolor('dark gray'), thick=1.5, linestyle=2
+;      outplot, date_mag, bx, color=cgcolor('red'), thick=1.5
+;      outplot, date_mag, by, color=cgcolor('green'), thick=1.5
+;      outplot, date_mag, bz, color=cgcolor('blue'), thick=1.5
+;      outplot, [lineval,lineval],[ranges[8],ranges[9]*1.5], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[ranges[8],ranges[9]*1.5], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      if map_identifyer eq 'STEREO' then begin
+;        xyouts, 0.85,0.87,'B!Dr!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
+;        xyouts, 0.9,0.87,'B!Dt!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
+;        xyouts, 0.95,0.87,'B!Dn!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
+;      endif else begin
+;      xyouts, 0.85,0.87,'B!Dx!n', charsize=1, charthick=1.5, color=cgcolor('red'), alignment=0,/norm
+;      xyouts, 0.9,0.87,'B!Dy!n', charsize=1, charthick=1.5, color=cgcolor('green'), alignment=0,/norm
+;      xyouts, 0.95,0.87,'B!Dz!n', charsize=1, charthick=1.5, color=cgcolor('blue'), alignment=0,/norm
+;      endelse
+;      
+;      WSET, insi_ids.draw_insitu6ID
+;      !p.color=cgcolor('black')
+;      rndvec=randomu(seed, n_elements(date_mag))
+;      utplot, date_mag, rndvec, xtit='Time (Starting '+stim+' )', ytit=' ', title=' ', position=[0.08,0.7,0.99,0.99],  Color=cgColor('black'), Background=cgColor('white'), $;psym=10,
+;        xstyle=9, ystyle=4,charsize=1, xmargin=[10,10], ymargin=[10,10], xthick=1.5, ythick=1.5,charthick=1.5, thick=1.5, yrange=[0,1], timerange=[stim,etim], /nodata,xticklen=!D.y_VSIZE/100., xminor=4
+;      outplot, [lineval,lineval],[-2,1], color=cgcolor('red'), thick=1
+;      outplot, [date_map,date_map],[-2,1], color=cgcolor('blue'), thick=1, linestyle=2
+;      
+;      end
+;    'abort_insi': WIDGET_CONTROL, insi_ids.insi_main,/destroy
+;    'save_insi': begin
+;      widget_control,/hourglass
+;      
+;      x_size=21.0       ;x size in cm
+;      y_size=29.7     ;x size in cm
+;      x_offset=0
+;      y_offset=1
+;
+;      lin_thick=2
+;      ;---------------------------------------- Data ----------------------------------------
+;      ;timerange
+;      widget_control, insi_ids.start_time, get_value=stim
+;      widget_control, insi_ids.end_time, get_value=etim
+;      xr=[stim,etim]
+;
+;
+;      if map_identifyer eq 'SOHO' or map_identifyer eq 'SDO' then begin & obs= 'ACE' & endif else begin
+;        if strmatch(workmap.id,'*STEREO_A*', /fold_case) eq 1 then obs= map_identifyer+'_A'
+;        if strmatch(workmap.id,'*STEREO_B*', /fold_case) eq 1 then obs= map_identifyer+'_B'
+;      endelse
+;      
+;      ;title
+;      tit='In-Situ Measurements '+obs
+;
+;      cloudstart=[date_map,date_map]
+;
+;      ;panel 1:         density
+;      yr1=[ranges[2],ranges[3]]
+;      y1=density
+;      ytit1='N!Dp!N [cm!U-3!N]'
+;      x1=date_plasma
+;
+;      ;panel 2:         velocity
+;      yr2=[ranges[0],ranges[1]]
+;      y2=speed
+;      ytit2='v!Dp!N [km s!U-1!N]'
+;      x2=date_plasma
+;
+;      ;panel 3:         temperature
+;      yr3=[ranges[4],ranges[5]]
+;      y3=temp/1e5
+;      ytit3='T!Dp!N [10!U5!N K]
+;      x3=date_plasma
+;      ;----------------------
+;      ;expected temp
+;      h500= where(y2 gt 500)
+;      l500= where(y2 le 500)
+;      y3_exp=y2
+;      ;dis=SATELLITE_HCI_5m.radius[*]/double(149578710)
+;      ;y4_exp[l500]=(((0.0106*y1[l500] - 0.278)*3.)/dis)/1e2
+;      ;y4_exp[h500]=((0.77*y1[h500] - 265.)/dis)/1e2
+;
+;      y3_exp[h500]=(0.77*y2[h500]-265)/1e2
+;      y3_exp[l500]=((0.031*y2[l500]-4.39)^2.)/1e2
+;      ;------------------------------------------------
+;      ;
+;
+;      ;panel 5-8:         magnetic field
+;      yr6=[ranges[8],ranges[9]]
+;      yr6_abs=[ranges[6],ranges[7]]
+;      y6=btsc
+;      y6_x=bx
+;      y6_y=by
+;      y6_z= bz
+;      ytit6='B [nT]'
+;      
+;      if map_identifyer eq 'STEREO' then begin
+;        ytit6_x='B!Dr!N [nT]'
+;        ytit6_y='B!Dt!N [nT]'
+;        ytit6_z='B!Dn!N [nT]'
+;      endif else begin
+;        ytit6_x='B!Dx!N [nT]'
+;        ytit6_y='B!Dy!N [nT]'
+;        ytit6_z='B!Dz!N [nT]'
+;      endelse
+;      
+;      x6=date_mag
+;      x6x=date_mag
+;      x6y=date_mag
+;      x6z=date_mag
+;
+;
+;      widget_control, ids.sv_path, get_value=temp_path
+;      
+;      outname=temp_path+strmid(windex.date_obs,0,16)+'_'+obs+'_in_situ_plot.eps'
+;      
+;      if file_test(outname) eq 1 then begin
+;        res=dialog_message( ['                                    ',$
+;          '       File already exists!         ',$
+;          '     Do you want to overwrite!      ',$
+;          '                                    '], dialog_parent=ids.ex_main,/question)
+;        if res eq 'No' then begin
+;          file_number=1
+;          while file_test(outname) eq 1 do begin
+;            file_number++
+;            outname=temp_path+strmid(windex.date_obs,0,16)+'_'+obs+'_in_situ_plot_'+strtrim(string(file_number),2)+'.eps'
+;          endwhile
+;        endif
+;
+;      endif
+;      
+;      
+;      SET_PLOT, 'PS'
+;      device, filename=outname,xsize = x_size, ysize = y_size, xoffset = x_offset, yoffset = y_offset, encaps = 1,color=1,decomposed=1, landscape=0
+;      !p.multi=[0,20,1]
+;
+;      xticklength=0.08
+;      
+;
+;      ;panel 1
+;      pn=1
+;      utplot, x1, y1,  ytit=' ' , title=tit, thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr1, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;
+;      outplot,cloudstart,yr1, linestyle=0, color =cgcolor('dodger blue'),thick=3
+;
+;
+;      utplot, x1, y1,  ytit=ytit1 , title=tit, thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr1, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;      
+;
+;      outplot, x1, y1, linestyle=0, color =cgcolor('black'),thick=lin_thick
+;
+;      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
+;      axis,  xaxis=1,/nodata, xthick=3,XTICKFORMAT="(A1)",xticklen=0.00005;xticklength
+;
+;      ;panel 2
+;      pn=2
+;      utplot, x2, y2, ytit=' ' , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr2, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;
+;      outplot,cloudstart,yr2, linestyle=0, color =cgcolor('dodger blue'),thick=3
+;
+;      utplot, x2, y2, ytit=ytit2 , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr2, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;
+;      outplot, x2, y2, linestyle=0, color =cgcolor('black'),thick=lin_thick
+;
+;      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
+;
+;
+;      ;panel 3
+;      pn=3
+;      utplot, x3, y3, ytit=' ' , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr3, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;
+;      outplot,cloudstart,yr3, linestyle=0, color =cgcolor('dodger blue'),thick=3
+;
+;      utplot, x3, y3, ytit=ytit3 , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr3, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;      
+;
+;      outplot, x3, y3, linestyle=0, color =cgcolor('black'),thick=lin_thick
+;
+;      outplot, x2, y3_exp,linestyle=0, color =cgcolor('red'),thick=lin_thick+1
+;
+;      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
+;      xyouts, 0.87,  0.91-0.135*(pn-0.7),'T!Dexp!N',size=1.3, charthick=3.5, color=cgcolor('red'),/NORMAL, alignment=1
+;
+;      ;panel 4
+;      pn=4
+;      
+;      utplot, x6, y6, ytit=' ' , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6_abs, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;      
+;      outplot,cloudstart,yr6_abs, linestyle=0, color =cgcolor('dodger blue'),thick=3
+;      
+;      utplot, x6, y6, ytit=ytit6 , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;      xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6_abs, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;      
+;      outplot, x6,y6, linestyle=0, color =cgcolor('black'),thick=lin_thick
+;      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
+;      
+;
+;      ;panel 5
+;      pn=5
+;      
+;      utplot, x6, y6_x, ytit=' ' , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;        xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;
+;      outplot,cloudstart,yr6, linestyle=0, color =cgcolor('dodger blue'),thick=3
+;
+;      utplot, x6, y6_x, ytit=ytit6_x , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;        xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;      
+;      outplot,[x6[0],x6[-1]],[0,0], linestyle=1, color =cgcolor('dark gray'),thick=2
+;      outplot, x6,y6_x, linestyle=0, color =cgcolor('black'),thick=lin_thick
+;      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
+;      
+;      ;panel 6
+;      pn=6
+;
+;      utplot, x6, y6_y, ytit=' ' , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;        xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;
+;      outplot,cloudstart,yr6, linestyle=0, color =cgcolor('dodger blue'),thick=3
+;
+;      utplot, x6, y6_y, ytit=ytit6_y , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;        xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;
+;      outplot,[x6[0],x6[-1]],[0,0], linestyle=1, color =cgcolor('dark gray'),thick=2
+;      outplot, x6,y6_y, linestyle=0, color =cgcolor('black'),thick=lin_thick
+;      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
+;      
+;      ;panel 7
+;      pn=7
+;
+;      utplot, x6, y6_z, ytit=' ' , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;        xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6, xthick=3, ythick=3,charthick=3,charsize=2,/nodata,XTICKFORMAT="(A1)", xtit=' ',yminor=1,xticklen=xticklength
+;
+;      outplot,cloudstart,yr6, linestyle=0, color =cgcolor('dodger blue'),thick=3
+;
+;      utplot, x6, y6_z, ytit=ytit6_z , title=' ', thick=6,position=[0.1,0.94-0.12*pn,0.9,0.94-0.12*(pn-1)],timerange =timerange, color=cgcolor('black'),$
+;        xstyle=9, ystyle=9, xmargin=[10,10], ymargin=[10,10], yrange=yr6, xthick=3, ythick=3,charthick=3,charsize=2,/nodata, xtit='Time after ' + strmid(strtrim(string(stim),2),0,16),yminor=1,xticklen=xticklength
+;
+;      outplot,[x6[0],x6[-1]],[0,0], linestyle=1, color =cgcolor('dark gray'),thick=2
+;      outplot, x6,y6_z, linestyle=0, color =cgcolor('black'),thick=lin_thick
+;      axis,  yaxis=1,/nodata, yticklen=0.0001,ythick=3,yTICKFORMAT="(A1)",yminor=1
+;      
+;
+;      clear_utplot
+;      DEVICE, /CLOSE_FILE
+;      SET_PLOT, 'X'
+;      !p.multi=0
+;      
+;      res=dialog_message('In-Situ plot saved!', dialog_parent=insi_ids.insi_main)
+;      
+;      end
+;  
+;  endcase
+;end
 
 PRO opt_event, ev                                          ; event handler
   common general, id, paths,dir,debug
