@@ -1009,8 +1009,8 @@ PRO config_event, ev                                          ; event handler
       if widget_info(cid.lbc,/button_set) eq 1 then new_paths.lbc ='on' else new_paths.lbc ='off'
       if widget_info(cid.lock,/button_set) eq 1 then new_paths.lock ='on' else new_paths.lock ='off'
       if widget_info(cid.free,/button_set) eq 1 then new_paths.free ='on' else new_paths.free ='off'
-
-      write_ini_catch, dir+'config_CATCH.ini', new_paths,id.main, /struct_old
+      
+      write_ini_catch, getenv('HOME')+'/.config_CATCH.ini', new_paths,id.main, /struct_old
       paths=new_paths
       WIDGET_CONTROL, cid.config_main,/destroy
     end
@@ -1021,8 +1021,8 @@ PRO config_event, ev                                          ; event handler
         '    the default values?     ',$
         '                            '], dialog_parent=cid.config_main,/question)
       if res eq 'Yes' then begin
-        write_ini_catch, dir+'config_CATCH.ini', 1, /create_default
-        read_ini_catch,dir+'config_CATCH.ini', paths
+        write_ini_catch, getenv('HOME')+'/.config_CATCH.ini', 1, /create_default
+        read_ini_catch,getenv('HOME')+'/.config_CATCH.ini', paths
         WIDGET_CONTROL, cid.config_main,/destroy
       endif else return
     end
@@ -1151,7 +1151,11 @@ end
 ;             -Minor Changes
 ;                     -Moved location of the configuration file (.config_CATCH.ini) to $HOME
 ;                     -Adjusted other pathing
-;                     -Various Bugfixing                                                                                        
+;                     -Various Bugfixing  
+;                        
+;        July 2020: (v1.11):
+;             -Minor Changes
+;                     -Various Bugfixing                                                                                   
 ;*******************************************************************************************
 ;-
 ;
@@ -1179,7 +1183,7 @@ pro catch_main
     '                                                                                ',$
     '                 Collection of Analysis Tools for Coronal Holes                 ',$
     '                                                                                ',$
-    '          Version v1.10       Dezember, 2019                                    ',$
+    '          Version v1.11       July, 2020                                        ',$
     '                                                                                ',$
     '          Developed by:       Stephan G. Heinemann                              ',$
     '                                                                                ',$
@@ -1216,7 +1220,7 @@ pro catch_main
   common general, id, paths,dir,debug
   common menu_id, menuid
   common version, version
-  version='v1.10'
+  version='v1.11'
 
   debug =0   ; debug mode if set to 1
   
